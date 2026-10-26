@@ -1,0 +1,66 @@
+# Operating System Files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Ignore existing external folders
+SocialNetworkAnalysis/
+
+# Temporary helper scripts
+powershell.cmd
+
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/wrapper/maven-wrapper.jar
+
+# Spring Boot H2 Database & local file storage
+data/
+*.mv.db
+*.trace.db
+
+# Node.js / React / Vite
+frontend/node_modules/
+node_modules/
+frontend/dist/
+dist/
+.eslintcache
+*.tsbuildinfo
+.vite/
+
+# Python / Flask
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+*.db
+*.sqlite3
+
+# IDE / Editor Files
+.idea/
+*.iml
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker & Local Testing artifacts
+.docker/
+docker-data/
