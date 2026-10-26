@@ -8,6 +8,8 @@ An enterprise-ready, beginner-friendly, full-stack civic governance portal engin
 
 The **Smart Citizen Complaint Management Portal** empowers citizens to submit civic grievances (roads & potholes, water supply, electricity, garbage collection, drainage, streetlights, and other civic issues) and track their resolution in real time. It equips civic administrators with a comprehensive dashboard to review, update status, add official remarks, and manage complaints effectively.
 
+> **Lab Verification Note:** This feature branch (`feature/complaint-form`) demonstrates Git branching and merge workflows for CO1.
+
 ---
 
 ## 🏗️ Technology Stack
