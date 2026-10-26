@@ -8,12 +8,11 @@ This guide provides step-by-step instructions to configure, run, and verify **Co
 
 ### Option A: Running Jenkins on Windows via WAR (Recommended for Lab)
 1. Download `jenkins.war` (LTS) from [jenkins.io](https://www.jenkins.io/download/).
-2. Open PowerShell or Command Prompt as Administrator and run:
+2. Open PowerShell or Command Prompt and run on port 9090 (since port 8080 is occupied by Oracle and 8081 is used by Spring Boot):
    ```powershell
-   java -jar jenkins.war --httpPort=8080
+   java -jar jenkins.war --httpPort=9090
    ```
-   *(If port 8080 conflicts with Spring Boot, run on port 9090: `java -jar jenkins.war --httpPort=9090`)*
-3. Open browser at `http://localhost:8080` (or `http://localhost:9090`).
+3. Open browser at `http://localhost:9090`.
 4. Copy the initial administrator password displayed in terminal or at:
    `C:\Users\<YourUser>\.jenkins\secrets\initialAdminPassword`
 5. Select **"Install Suggested Plugins"** and create your admin account.

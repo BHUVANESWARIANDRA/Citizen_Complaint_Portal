@@ -13,7 +13,7 @@ This guide documents the container orchestration workflow for the **Smart Citize
 |                                                                                                  |
 |   +------------------------------------+          +------------------------------------------+   |
 |   | Service: react-frontend (NodePort) |          | Service: springboot-backend (ClusterIP)  |   |
-|   | Port: 80 -> NodePort: 30080        |          | Port: 8080 -> TargetPort: 8080           |   |
+|   | Port: 80 -> NodePort: 30080        |          | Port: 8081 -> TargetPort: 8081           |   |
 |   +------------------------------------+          +------------------------------------------+   |
 |                     |                                                   |                        |
 |                     v                                                   v                        |
@@ -129,8 +129,8 @@ kubectl logs -f deployment/react-frontend -n smart-citizen
 # Forward React Frontend to localhost:3000
 kubectl port-forward svc/react-frontend 3000:80 -n smart-citizen
 
-# In a separate terminal, forward Spring Boot Backend to localhost:8080
-kubectl port-forward svc/springboot-backend 8080:8080 -n smart-citizen
+# In a separate terminal, forward Spring Boot Backend to localhost:8081
+kubectl port-forward svc/springboot-backend 8081:8081 -n smart-citizen
 ```
 Access the web portal in your browser at: `http://localhost:3000`
 

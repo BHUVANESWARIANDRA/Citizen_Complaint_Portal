@@ -13,7 +13,7 @@ This comprehensive guide covers container lifecycle management, multi-stage Dock
 |   +--------------------------+       +------------------------------+     +------------------+   |
 |   |   React Frontend (Web)   | ----> |     Spring Boot Backend      |     |  Flask Syllabus  |   |
 |   |     (Nginx Alpine)       | /api/ | (Eclipse Temurin 21 JRE)     |     |   Microservice   |   |
-|   |       Port: 3000         |       |         Port: 8080           |     |    Port: 5000    |   |
+|   |       Port: 3000         |       |         Port: 8081           |     |    Port: 5000    |   |
 |   +--------------------------+       +------------------------------+     +------------------+   |
 |                                                      |                              |            |
 |                                                      v                              v            |
@@ -33,7 +33,7 @@ This comprehensive guide covers container lifecycle management, multi-stage Dock
 | `docker pull eclipse-temurin:21-jre-alpine` | Downloads an official base image from Docker Hub. |
 | `docker images` | Lists all locally cached Docker images with tags and sizes. |
 | `docker build -t <image-name>:<tag> .` | Builds an optimized Docker image from the current directory `Dockerfile`. |
-| `docker run -d -p 8080:8080 --name backend-app <image>` | Instantiates and executes a container in detached background mode with port forwarding. |
+| `docker run -d -p 8081:8081 --name backend-app <image>` | Instantiates and executes a container in detached background mode with port forwarding (host port 8081 to container 8081). |
 | `docker ps` | Displays all currently active (running) containers. |
 | `docker ps -a` | Displays all containers including stopped/exited containers. |
 | `docker logs -f <container-id>` | Streams live container runtime standard output and log messages. |
@@ -52,9 +52,9 @@ This comprehensive guide covers container lifecycle management, multi-stage Dock
 # 1. Build the multi-stage image
 docker build -t smartcitizen/springboot-backend:1.0.0 -f springboot-app/Dockerfile springboot-app
 
-# 2. Run container with persistent local volume
+# 2. Run container with persistent local volume on port 8081
 docker run -d `
-  -p 8080:8080 `
+  -p 8081:8081 `
   --name springboot-portal-backend `
   -v smartcitizen-h2-data:/app/data `
   smartcitizen/springboot-backend:1.0.0

@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
     container_name: smartcitizen-springboot-backend
     ports:
-      - "8080:8080"
+      - "8081:8081"
     environment:
       - SPRING_APPLICATION_NAME=smart-citizen-complaint-portal
       - SPRING_DATASOURCE_URL=jdbc:h2:file:/app/data/complaintsdb;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
@@ -18,7 +18,7 @@ services:
     networks:
       - smartcitizen-net
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
       interval: 20s
       timeout: 5s
       retries: 5

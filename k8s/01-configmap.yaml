@@ -6,6 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: smart-citizen-complaint-portal
 data:
+  SERVER_PORT: "8081"
   SPRING_APPLICATION_NAME: "smart-citizen-complaint-portal"
   SPRING_DATASOURCE_URL: "jdbc:h2:file:/app/data/complaintsdb;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE"
   MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"

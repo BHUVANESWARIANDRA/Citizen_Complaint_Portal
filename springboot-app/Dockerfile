@@ -42,8 +42,8 @@ RUN chown appuser:appgroup /app/app.jar
 # Switch to non-root user
 USER appuser
 
-# Expose Spring Boot default port
-EXPOSE 8080
+# Expose Spring Boot port (configured to 8081)
+EXPOSE 8081
 
 # Configure JVM memory limits and runtime properties
 ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
@@ -51,6 +51,6 @@ ENV SPRING_DATASOURCE_URL="jdbc:h2:file:/app/data/complaintsdb;DB_CLOSE_ON_EXIT=
 
 # Container healthcheck using Spring Boot Actuator
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:8080/actuator/health || exit 1
+  CMD curl -f http://localhost:8081/actuator/health || exit 1
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

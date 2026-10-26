@@ -29,7 +29,7 @@ spec:
           image: smartcitizen/springboot-backend:1.0.0
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8080
+            - containerPort: 8081
               name: http
           envFrom:
             - configMapRef:
@@ -47,7 +47,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /actuator/health
-              port: 8080
+              port: 8081
             initialDelaySeconds: 45
             periodSeconds: 15
             timeoutSeconds: 5
@@ -55,7 +55,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 8080
+              port: 8081
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 3

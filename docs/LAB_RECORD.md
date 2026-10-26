@@ -72,7 +72,7 @@ graph TD
     end
 
     subgraph ServiceLayer["Application Microservices"]
-        SpringBootAPI["Spring Boot 3 REST API<br/>(Java 21 LTS)<br/>Port: 8080"]
+        SpringBootAPI["Spring Boot 3 REST API<br/>(Java 21 LTS)<br/>Port: 8081"]
         FlaskMicroservice["Python Flask API<br/>(Syllabus Exercise)<br/>Port: 5000"]
     end
 
@@ -211,7 +211,7 @@ flowchart LR
    - Stage 2: Runtime stage executes JAR using lightweight Alpine JRE, running as non-root user `appuser`.
 2. **Multi-Stage React Frontend Container:**
    - Stage 1: Node 22 compiles production static assets (`npm run build`).
-   - Stage 2: Nginx Alpine serves static files and reverse-proxies `/api/` to `springboot-backend:8080`.
+   - Stage 2: Nginx Alpine serves static files and reverse-proxies `/api/` to `springboot-backend:8081`.
 3. **Python Flask Microservice (Lab Syllabus):**
    - Independent microservice with SQLite database (`complaints_flask.db`).
    - Pytest automated test suite passing 5 test cases (`pytest -v`).
@@ -349,7 +349,7 @@ Use this checklist to capture output screenshots during your lab viva or practic
   *What to show:* Modal with status dropdown (In Progress / Resolved) and field engineer remark input.
 
 - [ ] **Screenshot 10: Jenkins CI Pipeline Execution**  
-  *URL:* `http://localhost:8080` or `http://localhost:9090`  
+  *URL:* `http://localhost:9090` (configured on port 9090 to avoid collisions)  
   *What to show:* Jenkins Declarative Pipeline Stage View with green blocks across all stages.
 
 - [ ] **Screenshot 11: Docker Containers Running (`docker compose ps`)**  
@@ -364,8 +364,8 @@ Use this checklist to capture output screenshots during your lab viva or practic
 
 ## 12. Results
 1. A fully functional, responsive full-stack civic portal was constructed with Java 21 Spring Boot 3, React 18, and Vite.
-2. The Spring Boot backend successfully passed all **17 unit and integration tests**, achieving 100% pass rate for data persistence and API endpoints.
-3. The React frontend was validated through automated component tests and compiled into an optimized Nginx production container.
+2. The Spring Boot backend successfully passed all **17 unit and integration tests**, achieving 100% pass rate for data persistence and API endpoints on port 8081.
+3. The React frontend was validated through automated component tests and compiled into an optimized Nginx production container with proxy to port 8081.
 4. An auxiliary Python Flask microservice was verified with 5 pytest test cases to satisfy the syllabus exercise.
 5. Continuous Integration and Continuous Delivery were automated using both Declarative and Scripted Jenkins pipeline syntaxes alongside a 3-stage Freestyle job chain.
 6. The entire application was containerized via multi-stage Docker builds and deployed to a local Kubernetes cluster with zero-downtime rolling update capabilities.
@@ -381,7 +381,7 @@ The **Smart Citizen Complaint Management Portal** successfully demonstrates the 
 
 | Issue / Error Observed | Root Cause | Resolution Step |
 |---|---|---|
-| `Port 8080 already in use` | Another process (e.g. Jenkins or Oracle XE) is bound to port 8080. | Stop the conflicting process or change port in `application.properties`: `server.port=8081`. If running Jenkins, run on port 9090. |
+| `Port 8080 was already in use` | Oracle Database Listener (`TNSLSNR.EXE`) or another system service is bound to port 8080. | Spring Boot is configured to use port 8081 (`server.port=8081` in `application.properties`). Vite proxy in `vite.config.js` forwards `/api` and `/actuator` to `http://localhost:8081`. Do not terminate or kill the Oracle service. |
 | `'powershell' is not recognized` in `mvnw.cmd` | Windows environment PATH was stripped or missing SystemRoot PowerShell path. | Prepend `@SET "PATH=%SystemRoot%\System32\WindowsPowerShell\v1.0;%PATH%"` at top of `mvnw.cmd` (already fixed in this codebase). |
 | `H2 Database file locked` | Multiple processes attempting to open `complaintsdb.mv.db` in file mode. | Ensure only one instance of Spring Boot is running locally. In Kubernetes, ensure `replicas: 1` for the backend deployment. |
 | `Docker daemon not connecting` | Docker Desktop is not started on the workstation. | Launch **Docker Desktop** from the Windows Start menu and wait until the status indicator turns green. |

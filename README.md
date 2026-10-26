@@ -78,11 +78,11 @@ smart-citizen-complaint-portal/
 ### 1. Run Spring Boot Backend
 ```powershell
 cd springboot-app
-.\mvnw.cmd clean spring-boot:run
+.\mvnw.cmd spring-boot:run
 ```
-- API Base URL: `http://localhost:8080/api/complaints`
-- Health Endpoint: `http://localhost:8080/actuator/health`
-- H2 Web Console: `http://localhost:8080/h2-console` (JDBC URL: `jdbc:h2:file:./data/complaintsdb`)
+- API Base URL: `http://localhost:8081/api/complaints`
+- Health Endpoint: `http://localhost:8081/actuator/health`
+- H2 Web Console: `http://localhost:8081/h2-console` (JDBC URL: `jdbc:h2:file:./data/complaintsdb`)
 
 ### 2. Run React Frontend
 ```powershell
@@ -91,13 +91,14 @@ npm install
 npm run dev
 ```
 - Web Portal: `http://localhost:5173`
+- Vite development proxy routes `/api` and `/actuator` to `http://localhost:8081`.
 
 ### 3. Run with Docker Compose
 ```powershell
 docker compose up --build -d
 ```
 - Frontend: `http://localhost:3000`
-- Backend: `http://localhost:8080`
+- Backend: `http://localhost:8081`
 - Flask Service: `http://localhost:5000`
 
 ---
