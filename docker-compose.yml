@@ -1,0 +1,84 @@
+services:
+  # =======================================================
+  # 1. Spring Boot Backend Service (Java 21 + H2 Persistent)
+  # =======================================================
+  springboot-backend:
+    build:
+      context: ./springboot-app
+      dockerfile: Dockerfile
+    container_name: smartcitizen-springboot-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_APPLICATION_NAME=smart-citizen-complaint-portal
+      - SPRING_DATASOURCE_URL=jdbc:h2:file:/app/data/complaintsdb;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
+      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info
+    volumes:
+      - h2-data:/app/data
+    networks:
+      - smartcitizen-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # =======================================================
+  # 2. React + Vite Frontend (Nginx Alpine + Reverse Proxy)
+  # =======================================================
+  react-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smartcitizen-react-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      springboot-backend:
+        condition: service_healthy
+    networks:
+      - smartcitizen-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # =======================================================
+  # 3. Python Flask Microservice (Lab Syllabus Exercise)
+  # =======================================================
+  flask-service:
+    build:
+      context: ./flask-app
+      dockerfile: Dockerfile
+    container_name: smartcitizen-flask-service
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - FLASK_DB_PATH=/app/data/complaints_flask.db
+    volumes:
+      - flask-data:/app/data
+    networks:
+      - smartcitizen-net
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\" || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+# Named persistent volumes for container durability across restarts
+volumes:
+  h2-data:
+    name: smartcitizen-h2-data
+  flask-data:
+    name: smartcitizen-flask-data
+
+networks:
+  smartcitizen-net:
+    name: smartcitizen-net
+    driver: bridge

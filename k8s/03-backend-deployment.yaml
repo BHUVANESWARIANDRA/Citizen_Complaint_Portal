@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springboot-backend
+  namespace: smart-citizen
+  labels:
+    app: springboot-backend
+    tier: backend
+spec:
+  # NOTE ON REPLICAS:
+  # We intentionally configure replicas: 1 because the application uses a local file-based
+  # persistent H2 database mounted on a ReadWriteOnce volume (/app/data/complaintsdb.mv.db).
+  # In production multi-replica environments, a centralized cluster database such as
+  # PostgreSQL, Cloud SQL, or MySQL is required to avoid file lock contention.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: springboot-backend
+  template:
+    metadata:
+      labels:
+        app: springboot-backend
+        tier: backend
+    spec:
+      containers:
+        - name: springboot-app
+          image: smartcitizen/springboot-backend:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: smart-citizen-config
+          volumeMounts:
+            - name: h2-storage
+              mountPath: /app/data
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1024Mi"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 2
+      volumes:
+        - name: h2-storage
+          persistentVolumeClaim:
+            claimName: h2-data-pvc

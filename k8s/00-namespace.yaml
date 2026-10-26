@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: smart-citizen
+  labels:
+    app.kubernetes.io/name: smart-citizen-complaint-portal
+    app.kubernetes.io/part-of: smart-citizen

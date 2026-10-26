@@ -1,0 +1,33 @@
+# Multi-stage Dockerfile for Spring Boot Application
+# Located under docker/ for centralized container orchestration
+
+FROM eclipse-temurin:21-jdk-alpine AS builder
+WORKDIR /build
+
+COPY springboot-app/.mvn/ .mvn/
+COPY springboot-app/mvnw springboot-app/pom.xml ./
+RUN chmod +x mvnw && ./mvnw dependency:go-offline -B || true
+
+COPY springboot-app/src ./src
+RUN ./mvnw clean package -DskipTests=true
+
+FROM eclipse-temurin:21-jre-alpine
+RUN apk add --no-cache curl
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+WORKDIR /app
+RUN mkdir -p /app/data && chown -R appuser:appgroup /app
+
+COPY --from=builder /build/target/*.jar /app/app.jar
+RUN chown appuser:appgroup /app/app.jar
+
+USER appuser
+EXPOSE 8080
+
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
+ENV SPRING_DATASOURCE_URL="jdbc:h2:file:/app/data/complaintsdb;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE"
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
