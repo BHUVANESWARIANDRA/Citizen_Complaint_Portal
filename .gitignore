@@ -2,6 +2,8 @@
 Thumbs.db
 Desktop.ini
 .DS_Store
+.env
+!.env.example
 
 # Ignore existing external folders
 SocialNetworkAnalysis/
@@ -64,3 +66,11 @@ yarn-error.log*
 # Docker & Local Testing artifacts
 .docker/
 docker-data/
+**/node_modules/
+**/target/
+**/dist/
+**/build/
+**/venv/
+**/.venv/
+*.sqlite
+*.sqlite3

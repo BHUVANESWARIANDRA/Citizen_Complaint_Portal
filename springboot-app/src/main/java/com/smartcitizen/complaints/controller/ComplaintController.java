@@ -3,6 +3,7 @@ package com.smartcitizen.complaints.controller;
 import com.smartcitizen.complaints.dto.ComplaintResponse;
 import com.smartcitizen.complaints.dto.ComplaintStatsResponse;
 import com.smartcitizen.complaints.dto.CreateComplaintRequest;
+import com.smartcitizen.complaints.dto.TrackComplaintRequest;
 import com.smartcitizen.complaints.dto.UpdateStatusRequest;
 import com.smartcitizen.complaints.model.ComplaintCategory;
 import com.smartcitizen.complaints.model.ComplaintStatus;
@@ -16,9 +17,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/complaints")
-@CrossOrigin(origins = "*", allowedHeaders = "*", methods = {
-        RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS
-})
 public class ComplaintController {
 
     private final ComplaintService complaintService;
@@ -29,7 +27,7 @@ public class ComplaintController {
 
     /**
      * Submit a new citizen complaint.
-     * Generates a unique complaint ID and stores in database.
+     * If user is authenticated, automatically attaches complaint to citizen profile.
      */
     @PostMapping
     public ResponseEntity<ComplaintResponse> createComplaint(@Valid @RequestBody CreateComplaintRequest request) {
@@ -50,7 +48,25 @@ public class ComplaintController {
     }
 
     /**
-     * Get aggregate statistics for the administrator portal.
+     * Retrieve complaints submitted by the currently authenticated citizen.
+     */
+    @GetMapping("/my")
+    public ResponseEntity<List<ComplaintResponse>> getMyComplaints() {
+        List<ComplaintResponse> complaints = complaintService.getMyComplaints();
+        return ResponseEntity.ok(complaints);
+    }
+
+    /**
+     * Securely track a complaint by reference ID and verification (email or phone).
+     */
+    @PostMapping("/track")
+    public ResponseEntity<ComplaintResponse> trackComplaint(@Valid @RequestBody TrackComplaintRequest request) {
+        ComplaintResponse response = complaintService.trackComplaint(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get aggregate statistics for the landing page and administrator portal.
      */
     @GetMapping("/stats")
     public ResponseEntity<ComplaintStatsResponse> getStats() {
@@ -69,6 +85,7 @@ public class ComplaintController {
 
     /**
      * Update the status and/or add an administrator remark to a complaint.
+     * Enforces municipal officer or administrator access in the backend service layer.
      */
     @PutMapping("/{id}/status")
     public ResponseEntity<ComplaintResponse> updateComplaintStatus(
@@ -80,6 +97,7 @@ public class ComplaintController {
 
     /**
      * Delete a complaint (requires confirmation on the client side).
+     * Enforces municipal officer or administrator access in the backend service layer.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteComplaint(@PathVariable String id) {

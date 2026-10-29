@@ -5,6 +5,9 @@ import com.smartcitizen.complaints.model.ComplaintCategory;
 import com.smartcitizen.complaints.model.ComplaintStatus;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ComplaintResponse {
 
@@ -18,10 +21,13 @@ public class ComplaintResponse {
     private String citizenName;
     private String citizenEmail;
     private String citizenPhone;
+    private Long citizenUserId;
     private ComplaintStatus status;
     private String adminRemark;
+    private String photo;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<AuditLogResponse> auditLogs = new ArrayList<>();
 
     public ComplaintResponse() {
     }
@@ -38,10 +44,20 @@ public class ComplaintResponse {
         dto.setCitizenName(complaint.getCitizenName());
         dto.setCitizenEmail(complaint.getCitizenEmail());
         dto.setCitizenPhone(complaint.getCitizenPhone());
+        if (complaint.getCitizen() != null) {
+            dto.setCitizenUserId(complaint.getCitizen().getId());
+        }
         dto.setStatus(complaint.getStatus());
         dto.setAdminRemark(complaint.getAdminRemark());
+        dto.setPhoto(complaint.getPhoto());
         dto.setCreatedAt(complaint.getCreatedAt());
         dto.setUpdatedAt(complaint.getUpdatedAt());
+
+        if (complaint.getAuditLogs() != null && !complaint.getAuditLogs().isEmpty()) {
+            dto.setAuditLogs(complaint.getAuditLogs().stream()
+                    .map(AuditLogResponse::fromEntity)
+                    .collect(Collectors.toList()));
+        }
         return dto;
     }
 
@@ -126,6 +142,14 @@ public class ComplaintResponse {
         this.citizenPhone = citizenPhone;
     }
 
+    public Long getCitizenUserId() {
+        return citizenUserId;
+    }
+
+    public void setCitizenUserId(Long citizenUserId) {
+        this.citizenUserId = citizenUserId;
+    }
+
     public ComplaintStatus getStatus() {
         return status;
     }
@@ -142,6 +166,14 @@ public class ComplaintResponse {
         this.adminRemark = adminRemark;
     }
 
+    public String getPhoto() {
+        return photo;
+    }
+
+    public void setPhoto(String photo) {
+        this.photo = photo;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -156,5 +188,13 @@ public class ComplaintResponse {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public List<AuditLogResponse> getAuditLogs() {
+        return auditLogs;
+    }
+
+    public void setAuditLogs(List<AuditLogResponse> auditLogs) {
+        this.auditLogs = auditLogs;
     }
 }

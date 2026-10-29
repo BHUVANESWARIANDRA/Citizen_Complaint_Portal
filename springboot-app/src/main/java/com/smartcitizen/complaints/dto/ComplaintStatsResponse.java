@@ -4,8 +4,10 @@ public class ComplaintStatsResponse {
 
     private long totalComplaints;
     private long submittedCount;
+    private long underReviewCount;
     private long inProgressCount;
     private long resolvedCount;
+    private long rejectedCount;
 
     public ComplaintStatsResponse() {
     }
@@ -15,6 +17,16 @@ public class ComplaintStatsResponse {
         this.submittedCount = submittedCount;
         this.inProgressCount = inProgressCount;
         this.resolvedCount = resolvedCount;
+    }
+
+    public ComplaintStatsResponse(long totalComplaints, long submittedCount, long underReviewCount,
+                                  long inProgressCount, long resolvedCount, long rejectedCount) {
+        this.totalComplaints = totalComplaints;
+        this.submittedCount = submittedCount;
+        this.underReviewCount = underReviewCount;
+        this.inProgressCount = inProgressCount;
+        this.resolvedCount = resolvedCount;
+        this.rejectedCount = rejectedCount;
     }
 
     public long getTotalComplaints() {
@@ -33,6 +45,14 @@ public class ComplaintStatsResponse {
         this.submittedCount = submittedCount;
     }
 
+    public long getUnderReviewCount() {
+        return underReviewCount;
+    }
+
+    public void setUnderReviewCount(long underReviewCount) {
+        this.underReviewCount = underReviewCount;
+    }
+
     public long getInProgressCount() {
         return inProgressCount;
     }
@@ -47,5 +67,13 @@ public class ComplaintStatsResponse {
 
     public void setResolvedCount(long resolvedCount) {
         this.resolvedCount = resolvedCount;
+    }
+
+    public long getRejectedCount() {
+        return rejectedCount;
+    }
+
+    public void setRejectedCount(long rejectedCount) {
+        this.rejectedCount = rejectedCount;
     }
 }

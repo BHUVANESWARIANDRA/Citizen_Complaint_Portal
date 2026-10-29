@@ -9,6 +9,7 @@ import com.smartcitizen.complaints.exception.ResourceNotFoundException;
 import com.smartcitizen.complaints.model.ComplaintCategory;
 import com.smartcitizen.complaints.model.ComplaintStatus;
 import com.smartcitizen.complaints.service.ComplaintService;
+import com.smartcitizen.complaints.security.JwtService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,9 @@ class ComplaintControllerTest {
 
     @MockBean
     private ComplaintService complaintService;
+
+    @MockBean
+    private JwtService jwtService;
 
     @Test
     @DisplayName("POST /api/complaints should return 201 Created on valid payload")

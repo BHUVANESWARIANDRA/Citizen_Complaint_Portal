@@ -33,6 +33,8 @@ public class CreateComplaintRequest {
     @Size(max = 25, message = "Citizen phone must not exceed 25 characters")
     private String citizenPhone;
 
+    private String photo;
+
     public CreateComplaintRequest() {
     }
 
@@ -101,5 +103,13 @@ public class CreateComplaintRequest {
 
     public void setCitizenPhone(String citizenPhone) {
         this.citizenPhone = citizenPhone;
+    }
+
+    public String getPhoto() {
+        return photo;
+    }
+
+    public void setPhoto(String photo) {
+        this.photo = photo;
     }
 }

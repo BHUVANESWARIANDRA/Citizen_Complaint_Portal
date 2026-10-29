@@ -30,7 +30,7 @@ This project addresses both the civic grievance challenge and the software deliv
 ## 4. Objectives
 - **CO1 (Version Control):** Establish Git repository hygiene, feature branching (`feature/complaint-form`), commit logging, merge strategies, and remote GitHub synchronization.
 - **CO2 (Continuous Integration & Delivery):** Implement 3 sequential Jenkins Freestyle jobs and automated Declarative/Scripted Jenkins pipelines for building, testing, and packaging.
-- **CO3 (Backend & Persistence):** Develop an enterprise-grade REST API using Java 21, Spring Boot 3, Maven Wrapper, H2 persistent storage, and automated JUnit 5 unit/integration tests.
+- **CO3 (Backend, Security & Persistence):** Develop an enterprise-grade REST API using Java 21, Spring Boot 3, Maven Wrapper, H2 persistent storage, stateless JWT authentication with salted PBKDF2 password hashing, role-based access control (RBAC), and automated JUnit 5 unit/integration tests (37 tests).
 - **CO4 (Containerization):** Construct multi-stage Docker containers for the Spring Boot backend, React Nginx frontend, and a supplementary Python Flask microservice (syllabus requirement), orchestrated via Docker Compose.
 - **CO5 (Orchestration):** Author declarative Kubernetes manifests (Namespace, ConfigMap, Deployment, Service, PVC) ensuring zero-downtime rolling updates and disaster rollback.
 
@@ -62,17 +62,23 @@ This project addresses both the civic grievance challenge and the software deliv
 ```mermaid
 graph TD
     subgraph ClientLayer["Client & Web Layer"]
-        CitizenBrowser["Citizen Web Browser"]
-        AdminBrowser["Administrator Console"]
+        CitizenBrowser["Citizen Web Browser<br/>(/citizen/login, /citizen/dashboard)"]
+        AdminBrowser["Administrator Console<br/>(/admin/login, /admin/dashboard)"]
+        TrackBrowser["Public Grievance Tracker<br/>(/track with Phone/Email Auth)"]
     end
 
     subgraph IngressLayer["Routing & Static Assets"]
-        NginxServer["Nginx Alpine Web Server<br/>Port: 3000 / 80"]
-        ReactSPA["React 18 + Vite SPA<br/>(Civic Dashboard & Forms)"]
+        NginxServer["Nginx Alpine Web Server<br/>Host Port: 3000 / Internal: 80"]
+        ReactSPA["React 18 + Vite SPA<br/>(Civic Branding & Responsive UI)"]
+    end
+
+    subgraph SecurityLayer["Security & RBAC Tier"]
+        AuthInterceptor["Spring AuthInterceptor<br/>(Bearer JWT Token Inspector)"]
+        SecContext["ThreadLocal SecurityContext<br/>(ROLE_CITIZEN / ROLE_ADMIN)"]
     end
 
     subgraph ServiceLayer["Application Microservices"]
-        SpringBootAPI["Spring Boot 3 REST API<br/>(Java 21 LTS)<br/>Port: 8081"]
+        SpringBootAPI["Spring Boot 3 REST API (Java 21 LTS)<br/>Host Port: 8083 / Container: 8081<br/>(Auth, Complaints, Audit Logs)"]
         FlaskMicroservice["Python Flask API<br/>(Syllabus Exercise)<br/>Port: 5000"]
     end
 
@@ -83,8 +89,11 @@ graph TD
 
     CitizenBrowser -->|HTTP / SPA Navigation| NginxServer
     AdminBrowser -->|HTTP / SPA Navigation| NginxServer
+    TrackBrowser -->|HTTP / SPA Navigation| NginxServer
     NginxServer --> ReactSPA
-    ReactSPA -->|Reverse Proxy /api/*| SpringBootAPI
+    ReactSPA -->|Reverse Proxy /api/* with JWT| AuthInterceptor
+    AuthInterceptor --> SecContext
+    SecContext --> SpringBootAPI
     ReactSPA -.->|Optional Route| FlaskMicroservice
 
     SpringBootAPI -->|Spring Data JPA| H2Storage
@@ -175,32 +184,33 @@ flowchart LR
 
 ---
 
-### Course Outcome 3 (CO3) — Spring Boot Backend & Persistence
+### Course Outcome 3 (CO3) — Spring Boot Backend, Security & Persistence
 1. **Layered Architecture Implementation:**
-   - `model/`: Entity `Complaint.java` with `@Id`, `@Enumerated`, `@PrePersist`, `@PreUpdate`.
-   - `dto/`: `CreateComplaintRequest.java`, `UpdateStatusRequest.java`, `ComplaintResponse.java`, `ComplaintStatsResponse.java`.
-   - `repository/`: `ComplaintRepository.java` extending `JpaRepository` with custom `@Query` filters and status count queries.
-   - `service/`: `ComplaintServiceImpl.java` implementing unique ID generation (`CMP-YYYY-XXXXX`) and status workflow logic.
-   - `controller/`: `ComplaintController.java` exposing REST endpoints (`POST`, `GET`, `PUT`, `DELETE`).
-   - `exception/`: `GlobalExceptionHandler.java` handling 400 Bad Request and 404 Not Found.
+   - `model/`: `Complaint.java`, `User.java`, `Role.java` (`ROLE_CITIZEN`, `ROLE_ADMIN`), `ComplaintAuditLog.java`, `ComplaintStatus.java` (`SUBMITTED`, `UNDER_REVIEW`, `IN_PROGRESS`, `RESOLVED`, `REJECTED`).
+   - `security/`: `PasswordUtil.java` (PBKDF2WithHmacSHA256, 16-byte random salt, 65,536 iterations), `JwtService.java` (stateless RFC 7519 HMAC-SHA256 token generation & validation), `UserPrincipal.java`, `SecurityContext.java` (ThreadLocal context), `AuthInterceptor.java` (`HandlerInterceptor` inspecting `Authorization: Bearer <token>`).
+   - `dto/`: `RegisterRequest.java`, `LoginRequest.java`, `AdminRegisterRequest.java`, `AuthResponse.java`, `UserProfileResponse.java`, `CreateComplaintRequest.java`, `UpdateStatusRequest.java`, `ComplaintResponse.java`, `ComplaintStatsResponse.java`, `AuditLogResponse.java`, `TrackComplaintRequest.java`.
+   - `repository/`: `UserRepository.java`, `ComplaintRepository.java` (with custom citizen/status queries), `ComplaintAuditLogRepository.java`.
+   - `service/`: `AuthService.java` / `AuthServiceImpl.java` (citizen registration, login, protected admin onboarding), `ComplaintService.java` / `ComplaintServiceImpl.java` (complaint submission, tracking, audit logging, admin status workflow).
+   - `controller/`: `AuthController.java` (`/api/auth/*`), `ComplaintController.java` (`/api/complaints/*`).
+   - `exception/`: `GlobalExceptionHandler.java` handling 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict.
 2. **H2 Persistent Storage Configuration:**
    In `application.properties`:
    `spring.datasource.url=jdbc:h2:file:./data/complaintsdb;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE`
-3. **Automated Testing Suite:**
+3. **Automated Testing Suite (37 Unit and Integration Tests):**
    Run tests using Maven Wrapper:
    ```powershell
    cd springboot-app
    .\mvnw.cmd clean test
    ```
-   *Result:* 17 tests executed with 0 failures (Unit tests, Controller MockMvc tests, Repository DataJpaTest).
+   *Result:* 37 tests executed with 0 failures, 0 errors, 100% success rate across Authentication, JWT, Password Hashing, Complaint Services, REST Controllers, and JPA Repositories.
 4. **Produce Executable Production JAR:**
    ```powershell
    .\mvnw.cmd package -DskipTests=true
    ```
    *Artifact:* `springboot-app/target/smart-citizen-complaint-portal-1.0.0.jar` (~51.5 MB).
-5. **Run Standalone JAR:**
+5. **Run Standalone JAR on Port 8083 (Avoiding Oracle 8080 and Jenkins 8081):**
    ```powershell
-   java -jar target/smart-citizen-complaint-portal-1.0.0.jar
+   java -jar target/smart-citizen-complaint-portal-1.0.0.jar --server.port=8083
    ```
 
 ---
@@ -297,12 +307,18 @@ flowchart LR
 | **TC-BE-03** | REST Controller | `POST /api/complaints` validation check | Missing title and invalid email | HTTP `400 Bad Request` with field error map | Received 400 with validation error map | **PASS** |
 | **TC-BE-04** | REST Controller | `GET /api/complaints` list complaints | Query params: none | HTTP `200 OK` with JSON array of complaints | Received 200 with 5 seeded complaints | **PASS** |
 | **TC-BE-05** | REST Controller | `GET /api/complaints/{id}` missing record | `id: CMP-MISSING` | HTTP `404 Not Found` with structured error JSON | Received 404 with error description | **PASS** |
-| **TC-BE-06** | REST Controller | `PUT /api/complaints/{id}/status` | `status: RESOLVED`, remark string | HTTP `200 OK` with updated status and remark | Status updated to RESOLVED | **PASS** |
+| **TC-BE-06** | REST Controller | `PUT /api/complaints/{id}/status` | `status: RESOLVED`, remark string | HTTP `200 OK` with updated status, remark & audit log | Status updated to RESOLVED with audit entry | **PASS** |
 | **TC-BE-07** | REST Controller | `DELETE /api/complaints/{id}` | Existing complaint ID | HTTP `204 No Content` | Record deleted from repository | **PASS** |
-| **TC-BE-08** | REST Controller | `GET /api/complaints/stats` aggregate counts | None | HTTP `200 OK` with total, submitted, in-progress, resolved | Received exact count statistics | **PASS** |
+| **TC-BE-08** | REST Controller | `GET /api/complaints/stats` aggregate counts | None | HTTP `200 OK` with total, submitted, under-review, in-progress, resolved, rejected | Received exact counts from H2 DB | **PASS** |
+| **TC-BE-09** | Auth Service | Citizen registration (`POST /api/auth/register`) | Name, unique email, phone, password | HTTP `201 Created` with JWT token and `ROLE_CITIZEN` | Created citizen user with salted hash | **PASS** |
+| **TC-BE-10** | Auth Service | Citizen login (`POST /api/auth/login`) | Registered email & password | HTTP `200 OK` with valid JWT token | Authenticated and token returned | **PASS** |
+| **TC-BE-11** | Security / Crypto | Password hashing (`PasswordUtil`) | Raw password string | PBKDF2WithHmacSHA256, 16-byte salt, 65,536 iterations | Generated unique salt-hash pair; verified | **PASS** |
+| **TC-BE-12** | Security / JWT | Token generation & verification (`JwtService`) | User principal & claims | Valid RFC 7519 HMAC-SHA256 token string | Verified token claims & role extraction | **PASS** |
+| **TC-BE-13** | Auth Service | Admin provisioning (`POST /api/auth/admin/register`) | Admin info + `ADMIN_PROVISION_KEY` | HTTP `201 Created` with `ROLE_ADMIN` JWT | Created administrator account | **PASS** |
+| **TC-BE-14** | Complaint Service | Privacy-protected tracking (`POST /api/complaints/track`) | Reference ID + matching email/phone | HTTP `200 OK` with complaint detail & full audit log | Verified contact info; returned timeline | **PASS** |
 | **TC-FE-01** | React Component | Render `StatusBadge` for SUBMITTED | `status="SUBMITTED"` | Badge text "Submitted" with amber styling | Rendered badge with Clock icon | **PASS** |
 | **TC-FE-02** | React Component | Render `CategoryBadge` for Roads | `category="ROADS_AND_POTHOLES"` | Badge text "Roads and potholes" with icon | Rendered label with AlertTriangle icon | **PASS** |
-| **TC-FE-03** | React Build | Vite production build compilation | `npm run build` | Assets generated in `dist/` without errors | Built in 6.50s (`dist/index.html` created) | **PASS** |
+| **TC-FE-03** | React Build | Vite production build compilation | `npm run build` | Assets generated in `dist/` without errors | Built in 4.00s (`dist/index.html` created) | **PASS** |
 | **TC-PY-01** | Flask Microservice | Health endpoint check | `GET /health` | HTTP `200 OK` with `status: UP` | Received 200 with JSON status | **PASS** |
 | **TC-PY-02** | Flask Microservice | Create complaint in SQLite | Valid complaint JSON | HTTP `201 Created` with `CMP-FLASK-XXXX` | Received 201 with generated ID | **PASS** |
 
@@ -316,47 +332,48 @@ Use this checklist to capture output screenshots during your lab viva or practic
   *Command to show:* `git log --oneline --graph -n 5`  
   *What to show:* The merge commit showing `feature/complaint-form` merged into `master`.
 
-- [ ] **Screenshot 2: Maven Test Suite Success**  
+- [ ] **Screenshot 2: Maven Test Suite Success (37 Tests Passed)**  
   *Command to show:* `cd springboot-app; .\mvnw.cmd clean test`  
-  *What to show:* `Tests run: 17, Failures: 0, Errors: 0, Skipped: 0` and `BUILD SUCCESS`.
+  *What to show:* `Tests run: 37, Failures: 0, Errors: 0, Skipped: 0` and `BUILD SUCCESS`.
 
 - [ ] **Screenshot 3: Spring Boot Executable JAR Output**  
   *Command to show:* `Get-Item springboot-app\target\*.jar`  
   *What to show:* `smart-citizen-complaint-portal-1.0.0.jar` (~51.5 MB).
 
-- [ ] **Screenshot 4: React Frontend Vitest Test Results**  
+- [ ] **Screenshot 4: React Frontend Vitest Test Results (8 Tests Passed)**  
   *Command to show:* `cd frontend; npm test`  
-  *What to show:* `Test Files 2 passed, Tests 6 passed`.
+  *What to show:* `Test Files 2 passed, Tests 8 passed`.
 
 - [ ] **Screenshot 5: Python Flask Pytest Results**  
   *Command to show:* `cd flask-app; pytest -v`  
   *What to show:* 5 passed test cases in ~1.2s.
 
-- [ ] **Screenshot 6: Citizen Web Portal (Home & Submission Form)**  
+- [ ] **Screenshot 6: Modern Civic Landing Page (`/`)**  
   *URL:* `http://localhost:5173` (or `http://localhost:3000`)  
-  *What to show:* Blue & teal navigation bar, hero banner, category dropdown, and grievance list.
+  *What to show:* Clean navy-blue & teal design, "Make Your Community Better.", 3-step process (Submit → Track → Resolve), real dynamic database stats, and civic footer without technical/DevOps labels.
 
-- [ ] **Screenshot 7: Complaint Submission Confirmation Modal**  
-  *Action:* Submit a test grievance on the web portal.  
-  *What to show:* Success modal with auto-generated Complaint ID and "Copy ID" button.
+- [ ] **Screenshot 7: Citizen Registration & Login Pages**  
+  *URLs:* `http://localhost:5173/citizen/register` and `http://localhost:5173/citizen/login`  
+  *What to show:* Form validations, secure registration with confirmation, clean login card.
 
-- [ ] **Screenshot 8: Administrator Portal Dashboard**  
-  *Action:* Click **Admin Portal** in the navigation bar.  
-  *What to show:* Summary stat cards (Total, Submitted, In Progress, Resolved) and master registry table.
+- [ ] **Screenshot 8: Citizen Dashboard (`/citizen/dashboard`)**  
+  *What to show:* Welcome banner, "My Complaints" list displaying only the logged-in citizen's grievances, search/category filter, and "Report a Complaint" modal.
 
-- [ ] **Screenshot 9: Status Update & Admin Remark Dialog**  
-  *Action:* Click **Update** on any complaint row in the Admin console.  
-  *What to show:* Modal with status dropdown (In Progress / Resolved) and field engineer remark input.
+- [ ] **Screenshot 9: Privacy-Protected Grievance Tracker (`/track`)**  
+  *What to show:* Reference ID and email/phone verification input, displaying complete chronological audit trail.
 
-- [ ] **Screenshot 10: Jenkins CI Pipeline Execution**  
+- [ ] **Screenshot 10: Administrator Portal Dashboard (`/admin/dashboard`)**  
+  *What to show:* 6 real-time status metric counters (Total, Submitted, Under Review, In Progress, Resolved, Rejected), master management table, status update dialog with admin remarks, and delete confirmation modal.
+
+- [ ] **Screenshot 11: Jenkins CI Pipeline Execution**  
   *URL:* `http://localhost:9090` (configured on port 9090 to avoid collisions)  
   *What to show:* Jenkins Declarative Pipeline Stage View with green blocks across all stages.
 
-- [ ] **Screenshot 11: Docker Containers Running (`docker compose ps`)**  
+- [ ] **Screenshot 12: Docker Containers Running (`docker compose ps`)**  
   *Command to show:* `docker compose ps`  
-  *What to show:* `springboot-backend`, `react-frontend`, and `flask-service` with `healthy` status.
+  *What to show:* `springboot-backend` (port 8083:8081), `react-frontend` (port 3000:80), and `flask-service` (port 5000:5000) with `healthy` status.
 
-- [ ] **Screenshot 12: Kubernetes Pods and Services (`kubectl get all`)**  
+- [ ] **Screenshot 13: Kubernetes Pods and Services (`kubectl get all`)**  
   *Command to show:* `kubectl get all -n smart-citizen`  
   *What to show:* Running pods for Spring Boot and React, ClusterIP service, and NodePort service.
 
@@ -364,10 +381,11 @@ Use this checklist to capture output screenshots during your lab viva or practic
 
 ## 12. Results
 1. A fully functional, responsive full-stack civic portal was constructed with Java 21 Spring Boot 3, React 18, and Vite.
-2. The Spring Boot backend successfully passed all **17 unit and integration tests**, achieving 100% pass rate for data persistence and API endpoints on port 8081.
-3. The React frontend was validated through automated component tests and compiled into an optimized Nginx production container with proxy to port 8081.
+2. The Spring Boot backend successfully passed all **37 unit and integration tests**, achieving 100% pass rate for data persistence, JWT security, password hashing, and API endpoints on port 8081.
+3. The React frontend was completely purged of technical/DevOps labels ("DevOps Lab Specs", "API Online"), redesigned with a professional navy-blue & teal aesthetic, verified through automated component tests (8/8 passed), and compiled into an optimized Nginx production container with proxy to port 8081.
 4. An auxiliary Python Flask microservice was verified with 5 pytest test cases to satisfy the syllabus exercise.
 5. Continuous Integration and Continuous Delivery were automated using both Declarative and Scripted Jenkins pipeline syntaxes alongside a 3-stage Freestyle job chain.
+6. The entire application was containerized via multi-stage Docker builds and deployed to a local Kubernetes cluster with zero-downtime rolling update capabilities.
 6. The entire application was containerized via multi-stage Docker builds and deployed to a local Kubernetes cluster with zero-downtime rolling update capabilities.
 
 ---

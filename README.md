@@ -93,12 +93,19 @@ npm run dev
 - Web Portal: `http://localhost:5173`
 - Vite development proxy routes `/api` and `/actuator` to `http://localhost:8081`.
 
+### Account access and complaint privacy
+
+- Citizens register and sign in through the citizen pages. Municipal officers use a separate, setup-key-protected officer provisioning page and receive the `ROLE_OFFICER` role; administrator accounts remain separate.
+- Officer/admin credentials are required to view the complete complaint list, update or delete complaints, and access persistent officer notifications. Citizens can view their own complaints; public tracking requires the complaint reference plus its registered email or phone.
+- Citizen and officer dashboards refresh complaint status automatically while open. New complaint notifications and their read state are stored in the H2 database and survive application restarts.
+- The production Nginx configuration falls back to the React app entry point for client-side routes, so direct navigation and refreshes under routes such as `/citizen/login` continue to serve the frontend.
+
 ### 3. Run with Docker Compose
 ```powershell
 docker compose up --build -d
 ```
 - Frontend: `http://localhost:3000`
-- Backend: `http://localhost:8081`
+- Backend: `http://localhost:8083` (container port `8081`)
 - Flask Service: `http://localhost:5000`
 
 ---

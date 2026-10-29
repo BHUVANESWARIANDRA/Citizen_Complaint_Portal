@@ -8,11 +8,14 @@ services:
       dockerfile: Dockerfile
     container_name: smartcitizen-springboot-backend
     ports:
-      - "8081:8081"
+      - "8083:8081"
     environment:
-      - SPRING_APPLICATION_NAME=smart-citizen-complaint-portal
-      - SPRING_DATASOURCE_URL=jdbc:h2:file:/app/data/complaintsdb;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
-      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info
+      SPRING_APPLICATION_NAME: smart-citizen-complaint-portal
+      SPRING_DATASOURCE_URL: jdbc:h2:file:/app/data/complaintsdb;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env or the shell environment}
+      ADMIN_PROVISION_KEY: ${ADMIN_PROVISION_KEY:-}
+      DEMO_ACCOUNTS_ENABLED: ${DEMO_ACCOUNTS_ENABLED:-false}
     volumes:
       - h2-data:/app/data
     networks:
@@ -41,10 +44,11 @@ services:
     networks:
       - smartcitizen-net
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/health || exit 1"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://127.0.0.1/health || exit 1"]
       interval: 20s
       timeout: 5s
       retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   # =======================================================

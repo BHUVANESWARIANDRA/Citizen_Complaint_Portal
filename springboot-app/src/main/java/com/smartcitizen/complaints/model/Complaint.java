@@ -2,6 +2,8 @@ package com.smartcitizen.complaints.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "complaints", indexes = {
@@ -46,6 +48,18 @@ public class Complaint {
 
     @Column(length = 2000)
     private String adminRemark;
+
+    @Lob
+    @Column(name = "photo")
+    private String photo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "citizen_user_id")
+    private User citizen;
+
+    @OneToMany(mappedBy = "complaint", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt ASC")
+    private List<ComplaintAuditLog> auditLogs = new ArrayList<>();
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -174,6 +188,14 @@ public class Complaint {
         this.adminRemark = adminRemark;
     }
 
+    public String getPhoto() {
+        return photo;
+    }
+
+    public void setPhoto(String photo) {
+        this.photo = photo;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -188,5 +210,26 @@ public class Complaint {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public User getCitizen() {
+        return citizen;
+    }
+
+    public void setCitizen(User citizen) {
+        this.citizen = citizen;
+    }
+
+    public List<ComplaintAuditLog> getAuditLogs() {
+        return auditLogs;
+    }
+
+    public void setAuditLogs(List<ComplaintAuditLog> auditLogs) {
+        this.auditLogs = auditLogs;
+    }
+
+    public void addAuditLog(ComplaintStatus fromStatus, ComplaintStatus toStatus, String remark, String updatedBy) {
+        ComplaintAuditLog log = new ComplaintAuditLog(this, fromStatus, toStatus, remark, updatedBy);
+        this.auditLogs.add(log);
     }
 }

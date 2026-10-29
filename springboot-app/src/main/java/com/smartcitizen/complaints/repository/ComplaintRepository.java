@@ -3,6 +3,7 @@ package com.smartcitizen.complaints.repository;
 import com.smartcitizen.complaints.model.Complaint;
 import com.smartcitizen.complaints.model.ComplaintCategory;
 import com.smartcitizen.complaints.model.ComplaintStatus;
+import com.smartcitizen.complaints.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +28,11 @@ public interface ComplaintRepository extends JpaRepository<Complaint, Long> {
     List<Complaint> findByCategoryAndStatusOrderByCreatedAtDesc(ComplaintCategory category, ComplaintStatus status);
 
     long countByStatus(ComplaintStatus status);
+
+    List<Complaint> findByCitizenOrderByCreatedAtDesc(User citizen);
+
+    @Query("SELECT c FROM Complaint c WHERE c.citizen = :citizen OR (c.citizenEmail IS NOT NULL AND LOWER(c.citizenEmail) = LOWER(:email)) ORDER BY c.createdAt DESC")
+    List<Complaint> findByCitizenOrEmail(@Param("citizen") User citizen, @Param("email") String email);
 
     @Query("SELECT c FROM Complaint c WHERE " +
            "(:category IS NULL OR c.category = :category) AND " +

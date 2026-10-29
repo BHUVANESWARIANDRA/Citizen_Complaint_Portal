@@ -34,6 +34,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: smart-citizen-config
+            - secretRef:
+                name: smart-citizen-secrets
           volumeMounts:
             - name: h2-storage
               mountPath: /app/data
