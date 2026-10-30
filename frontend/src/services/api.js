@@ -1,7 +1,11 @@
 import axios from 'axios';
 
-// Default base URL uses Vite proxy (/api) or environment variable if defined
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+// Vite's dev server and the production Nginx proxy use relative API paths.
+// Render provides the backend host without a scheme, so normalize it for browsers.
+const configuredApiUrl = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = configuredApiUrl && !/^https?:\/\//i.test(configuredApiUrl)
+  ? `https://${configuredApiUrl}`
+  : configuredApiUrl;
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

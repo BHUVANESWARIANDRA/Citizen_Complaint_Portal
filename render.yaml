@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: smart-citizen-api
+    runtime: docker
+    plan: 0.5c-512mb
+    dockerfilePath: ./springboot-app/Dockerfile
+    dockerContext: ./springboot-app
+    healthCheckPath: /actuator/health
+    disk:
+      name: smart-citizen-h2
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: SERVER_PORT
+        value: "10000"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_PROVISION_KEY
+        generateValue: true
+      - key: DEMO_ACCOUNTS_ENABLED
+        value: "false"
+      - key: JAVA_OPTS
+        value: "-Xms128m -Xmx320m -XX:+UseG1GC"
+
+  - type: web
+    name: smart-citizen-portal
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: smart-citizen-api
+          property: host
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

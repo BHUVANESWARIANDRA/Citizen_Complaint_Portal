@@ -108,6 +108,26 @@ docker compose up --build -d
 - Backend: `http://localhost:8083` (container port `8081`)
 - Flask Service: `http://localhost:5000`
 
+### 4. Deploy publicly with Render
+
+The root `render.yaml` defines a Render Blueprint with a public React site and
+Spring Boot API. The API uses generated secrets and a 1 GB persistent disk for
+the H2 complaint database; the persistent disk requires a paid Render web
+service plan. The optional Flask lab service is not part of the public portal.
+
+1. Push this repository, including `render.yaml`, to the Git branch you want to
+   deploy.
+2. In Render, choose **New → Blueprint**, connect the repository, and select
+   that branch.
+3. Review the two services and confirm the paid API plan and persistent disk
+   before applying the Blueprint.
+4. After both services report **Live**, open the `smart-citizen-portal` URL
+   shown in Render. The portal obtains the API hostname from the Blueprint;
+   Render generates the JWT and admin-provisioning secrets.
+
+The Render URL is the shareable public link; `http://localhost:3000` remains
+available only on the computer running Docker Compose.
+
 ---
 
 ## 📋 Course Outcomes (CO) Coverage
