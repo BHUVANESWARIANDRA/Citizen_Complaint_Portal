@@ -8,10 +8,10 @@ WORKDIR /build
 # Copy Maven Wrapper and POM first to leverage Docker layer caching
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
-RUN chmod +x mvnw
-
-# Download dependencies in offline mode
-RUN ./mvnw dependency:go-offline -B || true
+RUN sed -i 's/\r$//' mvnw \
+    && chmod +x mvnw \
+    && test "$(head -n 1 mvnw)" = '#!/bin/sh' \
+    && test -x mvnw
 
 # Copy application source code
 COPY src ./src
@@ -32,7 +32,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
 
-# Create directory for persistent H2 database storage
+# Create the application data directory for local/container mounts
 RUN mkdir -p /app/data && chown -R appuser:appgroup /app
 
 # Copy packaged JAR from builder stage
@@ -42,13 +42,11 @@ RUN chown appuser:appgroup /app/app.jar
 # Switch to non-root user
 USER appuser
 
-# Expose Spring Boot port (configured to 8081)
+# Spring Boot defaults to 8081 locally; Render supplies PORT at runtime.
 EXPOSE 8081
 
 # Configure JVM memory limits and runtime properties
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=65 -XX:+UseSerialGC"
-ENV PORT=8081
-ENV SPRING_DATASOURCE_URL="jdbc:h2:file:/app/data/complaintsdb;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE"
 
 # Container healthcheck using Spring Boot Actuator
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
