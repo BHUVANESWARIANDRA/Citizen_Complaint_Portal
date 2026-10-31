@@ -28,48 +28,104 @@ pipeline {
     }
 
     environment {
+        CHECKOUT_RESULT = 'NOT_RUN'
+        ENVIRONMENT_RESULT = 'NOT_RUN'
+        FRONTEND_INSTALL_RESULT = 'NOT_RUN'
+        FRONTEND_BUILD_RESULT = 'NOT_RUN'
         FRONTEND_TEST_RESULT = 'NOT_RUN'
         SPRING_TEST_RESULT = 'NOT_RUN'
         FLASK_TEST_RESULT = 'NOT_RUN'
         DOCKER_RESULT = 'NOT_RUN'
         KUBERNETES_RESULT = 'NOT_REQUESTED'
+        GIT_EXE = 'C:\\Program Files\\Git\\bin\\git.exe'
         PYTHON_EXE = 'C:\\Users\\BHUVANESWARI\\AppData\\Local\\Python\\bin\\python.exe'
+        DOCKER_EXE = 'C:\\Users\\BHUVANESWARI\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe'
+        PATH+GIT = 'C:\\Program Files\\Git\\bin'
+        PATH+PYTHON = 'C:\\Users\\BHUVANESWARI\\AppData\\Local\\Python\\bin'
+        PATH+DOCKER = 'C:\\Users\\BHUVANESWARI\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin'
         CI_IMAGE_TAG = "ci-${BUILD_NUMBER}"
     }
 
     stages {
-        stage('Git Checkout') {
+        stage('Git Checkout and Environment Verification') {
             steps {
                 checkout scm
+                script { env.CHECKOUT_RESULT = 'PASSED' }
                 bat '''
                     @echo off
+                    echo === Jenkins service account ===
+                    whoami
+                    echo === Required files ===
+                    if not exist frontend\\package.json (echo ERROR: frontend\\package.json is missing.& exit /b 1)
+                    if not exist frontend\\package-lock.json (echo ERROR: frontend\\package-lock.json is missing.& exit /b 1)
+                    if not exist springboot-app\\pom.xml (echo ERROR: springboot-app\\pom.xml is missing.& exit /b 1)
+                    if not exist springboot-app\\mvnw.cmd (echo ERROR: Maven Wrapper is missing.& exit /b 1)
+                    if not exist springboot-app\\.mvn\\wrapper\\maven-wrapper.properties (echo ERROR: Maven Wrapper properties are missing.& exit /b 1)
+                    if not exist flask-app\\app.py (echo ERROR: Flask app.py is missing.& exit /b 1)
+                    if not exist flask-app\\test_app.py (echo ERROR: Flask test_app.py is missing.& exit /b 1)
+                    if not exist flask-app\\requirements.txt (echo ERROR: Flask requirements.txt is missing.& exit /b 1)
+                    if not exist springboot-app\\Dockerfile (echo ERROR: Spring Boot Dockerfile is missing.& exit /b 1)
+                    if not exist frontend\\Dockerfile (echo ERROR: frontend Dockerfile is missing.& exit /b 1)
+                    if not exist flask-app\\Dockerfile (echo ERROR: Flask Dockerfile is missing.& exit /b 1)
+                    if not exist docker-compose.yml (echo ERROR: docker-compose.yml is missing.& exit /b 1)
+                    echo === Git ===
+                    if not exist "%GIT_EXE%" (echo ERROR: Git executable is not accessible at "%GIT_EXE%".& exit /b 1)
+                    "%GIT_EXE%" --version
+                    if errorlevel 1 exit /b 1
                     echo === Node.js ===
+                    where.exe node >nul 2>nul
+                    if errorlevel 1 (echo ERROR: Node.js is not on the PATH injected by Jenkins NodeJS-24.& exit /b 1)
                     node --version || exit /b 1
                     echo === npm ===
-                    call npm --version
+                    where.exe npm.cmd >nul 2>nul
+                    if errorlevel 1 (echo ERROR: npm.cmd is not on the PATH injected by Jenkins NodeJS-24.& exit /b 1)
+                    call npm.cmd --version
                     if errorlevel 1 exit /b 1
                     echo === Java ===
+                    where.exe java.exe >nul 2>nul
+                    if errorlevel 1 (echo ERROR: Java is not on the PATH injected by Jenkins JDK-21.& exit /b 1)
                     java -version
                     if errorlevel 1 exit /b 1
                     echo === Python ===
+                    if not exist "%PYTHON_EXE%" (echo ERROR: Python executable is not accessible at "%PYTHON_EXE%".& exit /b 1)
                     "%PYTHON_EXE%" --version || exit /b 1
                     echo === Maven Wrapper ===
                     call springboot-app\\mvnw.cmd --version
                     if errorlevel 1 exit /b 1
-                    echo === Git ===
-                    git --version || exit /b 1
+                    echo === Docker CLI and daemon ===
+                    if not exist "%DOCKER_EXE%" (echo ERROR: Docker CLI is not accessible at "%DOCKER_EXE%".& exit /b 1)
+                    "%DOCKER_EXE%" --version
+                    if errorlevel 1 exit /b 1
+                    "%DOCKER_EXE%" compose version
+                    if errorlevel 1 (echo ERROR: Docker Compose is not available to the Jenkins service account.& exit /b 1)
+                    "%DOCKER_EXE%" compose config --quiet --no-interpolate
+                    if errorlevel 1 (echo ERROR: docker-compose.yml failed Compose configuration validation.& exit /b 1)
+                    "%DOCKER_EXE%" info -f {{.ServerVersion}}
+                    if errorlevel 1 (echo ERROR: Docker CLI is present, but the Jenkins service account cannot access the Docker daemon.& exit /b 1)
                 '''
+                script { env.ENVIRONMENT_RESULT = 'PASSED' }
                 script {
                     env.CHECKED_OUT_COMMIT = bat(
-                        script: '@echo off\r\ngit rev-parse HEAD',
+                        script: '@echo off\r\n"%GIT_EXE%" rev-parse HEAD',
                         returnStdout: true
                     ).trim()
-                    env.CHECKED_OUT_BRANCH = env.BRANCH_NAME ?: bat(
-                        script: '@echo off\r\ngit rev-parse --abbrev-ref HEAD',
+                    env.CHECKED_OUT_BRANCH = env.BRANCH_NAME ?: (env.GIT_BRANCH ?: bat(
+                        script: '@echo off\r\n"%GIT_EXE%" rev-parse --abbrev-ref HEAD',
                         returnStdout: true
-                    ).trim()
+                    ).trim())
                     echo "Branch: ${env.CHECKED_OUT_BRANCH}"
                     echo "Commit: ${env.CHECKED_OUT_COMMIT}"
+                }
+            }
+            post {
+                failure {
+                    script {
+                        if (env.CHECKOUT_RESULT != 'PASSED') {
+                            env.CHECKOUT_RESULT = 'FAILED'
+                        } else {
+                            env.ENVIRONMENT_RESULT = 'FAILED'
+                        }
+                    }
                 }
             }
         }
@@ -81,7 +137,13 @@ pipeline {
                         stage('Frontend Install') {
                             steps {
                                 dir('frontend') {
-                                    bat 'call npm ci'
+                                    bat 'call npm ci --prefer-offline --no-audit --no-fund'
+                                    script { env.FRONTEND_INSTALL_RESULT = 'PASSED' }
+                                }
+                            }
+                            post {
+                                failure {
+                                    script { env.FRONTEND_INSTALL_RESULT = 'FAILED' }
                                 }
                             }
                         }
@@ -92,6 +154,12 @@ pipeline {
                                     bat 'call npm run build'
                                     bat 'if not exist dist\\index.html exit /b 1'
                                     echo 'Frontend bundle verified at frontend/dist/index.html'
+                                    script { env.FRONTEND_BUILD_RESULT = 'PASSED' }
+                                }
+                            }
+                            post {
+                                failure {
+                                    script { env.FRONTEND_BUILD_RESULT = 'FAILED' }
                                 }
                             }
                         }
@@ -134,13 +202,13 @@ pipeline {
                 stage('Flask Tests') {
                     steps {
                         script {
-                            env.FLASK_VENV = "${env.WORKSPACE}\\flask-ci-venv-${env.BUILD_NUMBER}"
+                            env.FLASK_VENV = "${env.WORKSPACE}\\flask-app\\.venv"
                         }
                         dir('flask-app') {
                             bat '"%PYTHON_EXE%" --version'
-                            bat '"%PYTHON_EXE%" -m venv "%FLASK_VENV%"'
-                            bat '"%FLASK_VENV%\\Scripts\\python.exe" -m pip install --disable-pip-version-check -r requirements.txt'
-                            bat '"%FLASK_VENV%\\Scripts\\python.exe" -c "import ast,pathlib; [ast.parse(p.read_text(encoding=\'utf-8\'), filename=str(p)) for p in map(pathlib.Path, (\'app.py\', \'test_app.py\'))]"'
+                            bat 'if not exist "%FLASK_VENV%\\Scripts\\python.exe" "%PYTHON_EXE%" -m venv "%FLASK_VENV%"'
+                            bat '"%FLASK_VENV%\\Scripts\\python.exe" -m pip install --disable-pip-version-check --prefer-binary -r requirements.txt'
+                            bat '"%FLASK_VENV%\\Scripts\\python.exe" -m py_compile app.py test_app.py'
                             bat 'if not exist target\\ci-reports mkdir target\\ci-reports'
                             bat '"%FLASK_VENV%\\Scripts\\python.exe" -m pytest -q test_app.py --junitxml=target/ci-reports/flask-results.xml'
                             script {
@@ -152,13 +220,6 @@ pipeline {
                         failure {
                             script { env.FLASK_TEST_RESULT = 'FAILED' }
                         }
-                        always {
-                            script {
-                                if (env.FLASK_VENV) {
-                                    bat "if exist \"%FLASK_VENV%\" rmdir /s /q \"%FLASK_VENV%\""
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -166,11 +227,11 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                bat 'docker info --format "{{.ServerVersion}}"'
-                bat "docker build -t smartcitizen/springboot-backend:${env.CI_IMAGE_TAG} -f springboot-app/Dockerfile springboot-app"
-                bat "docker build -t smartcitizen/react-frontend:${env.CI_IMAGE_TAG} -f frontend/Dockerfile frontend"
-                bat "docker build -t smartcitizen/flask-service:${env.CI_IMAGE_TAG} -f flask-app/Dockerfile flask-app"
-                bat "docker image inspect --format \"{{.Id}}\" smartcitizen/springboot-backend:${env.CI_IMAGE_TAG} smartcitizen/react-frontend:${env.CI_IMAGE_TAG} smartcitizen/flask-service:${env.CI_IMAGE_TAG}"
+                bat '"%DOCKER_EXE%" info -f {{.ServerVersion}}'
+                bat '"%DOCKER_EXE%" build -t smartcitizen/springboot-backend:%CI_IMAGE_TAG% -f springboot-app/Dockerfile springboot-app'
+                bat '"%DOCKER_EXE%" build -t smartcitizen/react-frontend:%CI_IMAGE_TAG% -f frontend/Dockerfile frontend'
+                bat '"%DOCKER_EXE%" build -t smartcitizen/flask-service:%CI_IMAGE_TAG% -f flask-app/Dockerfile flask-app'
+                bat '"%DOCKER_EXE%" image inspect --format "{{.Id}}" smartcitizen/springboot-backend:%CI_IMAGE_TAG% smartcitizen/react-frontend:%CI_IMAGE_TAG% smartcitizen/flask-service:%CI_IMAGE_TAG%'
                 script { env.DOCKER_RESULT = 'PASSED' }
             }
             post {
@@ -262,7 +323,7 @@ pipeline {
                     if not exist springboot-app\\target\\surefire-reports\\*.xml exit /b 1
                     if not exist flask-app\\target\\ci-reports\\flask-results.xml exit /b 1
                 '''
-                bat "docker image inspect --format \"{{.Id}}\" smartcitizen/springboot-backend:${env.CI_IMAGE_TAG} smartcitizen/react-frontend:${env.CI_IMAGE_TAG} smartcitizen/flask-service:${env.CI_IMAGE_TAG}"
+                bat '"%DOCKER_EXE%" image inspect --format "{{.Id}}" smartcitizen/springboot-backend:%CI_IMAGE_TAG% smartcitizen/react-frontend:%CI_IMAGE_TAG% smartcitizen/flask-service:%CI_IMAGE_TAG%'
                 echo 'All configured tests, build artifacts, and Docker images are present.'
             }
         }
@@ -277,8 +338,12 @@ pipeline {
                 fingerprint: true
             echo '================ CI/CD FINAL REPORT ================'
             echo "Pipeline result: ${currentBuild.currentResult}"
+            echo "Git checkout: ${env.CHECKOUT_RESULT}"
+            echo "Environment verification: ${env.ENVIRONMENT_RESULT}"
             echo "Branch: ${env.CHECKED_OUT_BRANCH ?: 'not checked out'}"
             echo "Commit: ${env.CHECKED_OUT_COMMIT ?: 'not checked out'}"
+            echo "Frontend installation: ${env.FRONTEND_INSTALL_RESULT}"
+            echo "Frontend build: ${env.FRONTEND_BUILD_RESULT}"
             echo "Frontend tests: ${env.FRONTEND_TEST_RESULT}"
             echo "Spring Boot tests: ${env.SPRING_TEST_RESULT}"
             echo "Flask tests: ${env.FLASK_TEST_RESULT}"
