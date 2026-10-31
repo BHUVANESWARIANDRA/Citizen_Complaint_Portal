@@ -33,6 +33,7 @@ pipeline {
         FLASK_TEST_RESULT = 'NOT_RUN'
         DOCKER_RESULT = 'NOT_RUN'
         KUBERNETES_RESULT = 'NOT_REQUESTED'
+        PYTHON_EXE = 'C:\\Users\\BHUVANESWARI\\AppData\\Local\\Python\\bin\\python.exe'
         CI_IMAGE_TAG = "ci-${BUILD_NUMBER}"
     }
 
@@ -51,7 +52,7 @@ pipeline {
                     java -version
                     if errorlevel 1 exit /b 1
                     echo === Python ===
-                    python --version || exit /b 1
+                    "%PYTHON_EXE%" --version || exit /b 1
                     echo === Maven Wrapper ===
                     call springboot-app\\mvnw.cmd --version
                     if errorlevel 1 exit /b 1
@@ -73,82 +74,90 @@ pipeline {
             }
         }
 
-        stage('Frontend Install') {
-            steps {
-                dir('frontend') {
-                    bat 'call npm ci'
-                }
-            }
-        }
+        stage('Application CI') {
+            parallel {
+                stage('Frontend CI') {
+                    stages {
+                        stage('Frontend Install') {
+                            steps {
+                                dir('frontend') {
+                                    bat 'call npm ci'
+                                }
+                            }
+                        }
 
-        stage('Frontend Build') {
-            steps {
-                dir('frontend') {
-                    bat 'call npm run build'
-                    bat 'if not exist dist\\index.html exit /b 1'
-                    echo 'Frontend bundle verified at frontend/dist/index.html'
-                }
-            }
-        }
+                        stage('Frontend Build') {
+                            steps {
+                                dir('frontend') {
+                                    bat 'call npm run build'
+                                    bat 'if not exist dist\\index.html exit /b 1'
+                                    echo 'Frontend bundle verified at frontend/dist/index.html'
+                                }
+                            }
+                        }
 
-        stage('Frontend Tests') {
-            steps {
-                dir('frontend') {
-                    bat 'if not exist target\\ci-reports mkdir target\\ci-reports'
-                    bat 'call npm test -- --reporter=default --reporter=junit --outputFile=target/ci-reports/frontend-results.xml'
-                    script { env.FRONTEND_TEST_RESULT = 'PASSED' }
-                }
-            }
-            post {
-                failure {
-                    script { env.FRONTEND_TEST_RESULT = 'FAILED' }
-                }
-            }
-        }
-
-        stage('Spring Boot Build and Tests') {
-            steps {
-                dir('springboot-app') {
-                    bat 'call mvnw.cmd clean verify'
-                    bat 'if not exist target\\surefire-reports\\*.xml exit /b 1'
-                    bat 'if not exist target\\smart-citizen-complaint-portal-1.0.0.jar exit /b 1'
-                    script {
-                        env.SPRING_TEST_RESULT = 'PASSED'
+                        stage('Frontend Tests') {
+                            steps {
+                                dir('frontend') {
+                                    bat 'if not exist target\\ci-reports mkdir target\\ci-reports'
+                                    bat 'call npm test -- --reporter=default --reporter=junit --outputFile=target/ci-reports/frontend-results.xml'
+                                    script { env.FRONTEND_TEST_RESULT = 'PASSED' }
+                                }
+                            }
+                            post {
+                                failure {
+                                    script { env.FRONTEND_TEST_RESULT = 'FAILED' }
+                                }
+                            }
+                        }
                     }
                 }
-            }
-            post {
-                failure {
-                    script { env.SPRING_TEST_RESULT = 'FAILED' }
-                }
-            }
-        }
 
-        stage('Flask Tests') {
-            steps {
-                script {
-                    env.FLASK_VENV = "${env.WORKSPACE}\\flask-ci-venv-${env.BUILD_NUMBER}"
-                }
-                dir('flask-app') {
-                    bat 'python --version'
-                    bat 'python -m venv "%FLASK_VENV%"'
-                    bat '"%FLASK_VENV%\\Scripts\\python.exe" -m pip install --disable-pip-version-check -r requirements.txt'
-                    bat '"%FLASK_VENV%\\Scripts\\python.exe" -c "import ast,pathlib; [ast.parse(p.read_text(encoding=\'utf-8\'), filename=str(p)) for p in map(pathlib.Path, (\'app.py\', \'test_app.py\'))]"'
-                    bat 'if not exist target\\ci-reports mkdir target\\ci-reports'
-                    bat '"%FLASK_VENV%\\Scripts\\python.exe" -m pytest -q test_app.py --junitxml=target/ci-reports/flask-results.xml'
-                    script {
-                        env.FLASK_TEST_RESULT = 'PASSED'
+                stage('Spring Boot Build and Tests') {
+                    steps {
+                        dir('springboot-app') {
+                            bat 'call mvnw.cmd clean verify'
+                            bat 'if not exist target\\surefire-reports\\*.xml exit /b 1'
+                            bat 'if not exist target\\smart-citizen-complaint-portal-1.0.0.jar exit /b 1'
+                            script {
+                                env.SPRING_TEST_RESULT = 'PASSED'
+                            }
+                        }
+                    }
+                    post {
+                        failure {
+                            script { env.SPRING_TEST_RESULT = 'FAILED' }
+                        }
                     }
                 }
-            }
-            post {
-                failure {
-                    script { env.FLASK_TEST_RESULT = 'FAILED' }
-                }
-                always {
-                    script {
-                        if (env.FLASK_VENV) {
-                            bat "if exist \"%FLASK_VENV%\" rmdir /s /q \"%FLASK_VENV%\""
+
+                stage('Flask Tests') {
+                    steps {
+                        script {
+                            env.FLASK_VENV = "${env.WORKSPACE}\\flask-ci-venv-${env.BUILD_NUMBER}"
+                        }
+                        dir('flask-app') {
+                            bat '"%PYTHON_EXE%" --version'
+                            bat '"%PYTHON_EXE%" -m venv "%FLASK_VENV%"'
+                            bat '"%FLASK_VENV%\\Scripts\\python.exe" -m pip install --disable-pip-version-check -r requirements.txt'
+                            bat '"%FLASK_VENV%\\Scripts\\python.exe" -c "import ast,pathlib; [ast.parse(p.read_text(encoding=\'utf-8\'), filename=str(p)) for p in map(pathlib.Path, (\'app.py\', \'test_app.py\'))]"'
+                            bat 'if not exist target\\ci-reports mkdir target\\ci-reports'
+                            bat '"%FLASK_VENV%\\Scripts\\python.exe" -m pytest -q test_app.py --junitxml=target/ci-reports/flask-results.xml'
+                            script {
+                                env.FLASK_TEST_RESULT = 'PASSED'
+                            }
+                        }
+                    }
+                    post {
+                        failure {
+                            script { env.FLASK_TEST_RESULT = 'FAILED' }
+                        }
+                        always {
+                            script {
+                                if (env.FLASK_VENV) {
+                                    bat "if exist \"%FLASK_VENV%\" rmdir /s /q \"%FLASK_VENV%\""
+                                }
+                            }
                         }
                     }
                 }
