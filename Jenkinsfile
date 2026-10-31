@@ -40,9 +40,7 @@ pipeline {
         GIT_EXE = 'C:\\Program Files\\Git\\bin\\git.exe'
         PYTHON_EXE = 'C:\\Users\\BHUVANESWARI\\AppData\\Local\\Python\\bin\\python.exe'
         DOCKER_EXE = 'C:\\Users\\BHUVANESWARI\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe'
-        PATH+GIT = 'C:\\Program Files\\Git\\bin'
-        PATH+PYTHON = 'C:\\Users\\BHUVANESWARI\\AppData\\Local\\Python\\bin'
-        PATH+DOCKER = 'C:\\Users\\BHUVANESWARI\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin'
+        PATH = "C:\\Program Files\\Git\\bin;C:\\Users\\BHUVANESWARI\\AppData\\Local\\Python\\bin;C:\\Users\\BHUVANESWARI\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin;${env.PATH}"
         CI_IMAGE_TAG = "ci-${BUILD_NUMBER}"
     }
 
