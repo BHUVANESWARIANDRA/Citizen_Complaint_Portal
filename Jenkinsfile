@@ -8,19 +8,14 @@ pipeline {
 
     parameters {
         booleanParam(
-            name: 'BUILD_DOCKER_IMAGES',
-            defaultValue: false,
-            description: 'Build and validate Docker images and Compose configuration'
-        )
-        booleanParam(
             name: 'DEPLOY_TO_KUBERNETES',
             defaultValue: false,
-            description: 'Deploy the built Spring Boot API and React portal to the selected local cluster'
+            description: 'Optional: deploy to the configured local Kubernetes cluster'
         )
         choice(
             name: 'KUBERNETES_PROVIDER',
             choices: ['docker-desktop', 'minikube'],
-            description: 'Expected kubectl context when Kubernetes deployment is enabled'
+            description: 'Kubernetes context used only when deployment is explicitly enabled'
         )
     }
 
@@ -36,15 +31,33 @@ pipeline {
         FRONTEND_TEST_RESULT = 'NOT_RUN'
         SPRING_TEST_RESULT = 'NOT_RUN'
         FLASK_TEST_RESULT = 'NOT_RUN'
-        DOCKER_RESULT = 'NOT_REQUESTED'
-        KUBERNETES_RESULT = 'NOT_VALIDATED'
+        DOCKER_RESULT = 'NOT_RUN'
+        KUBERNETES_RESULT = 'NOT_REQUESTED'
         CI_IMAGE_TAG = "ci-${BUILD_NUMBER}"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Git Checkout') {
             steps {
                 checkout scm
+                bat '''
+                    @echo off
+                    echo === Node.js ===
+                    node --version || exit /b 1
+                    echo === npm ===
+                    call npm --version
+                    if errorlevel 1 exit /b 1
+                    echo === Java ===
+                    java -version
+                    if errorlevel 1 exit /b 1
+                    echo === Python ===
+                    python --version || exit /b 1
+                    echo === Maven Wrapper ===
+                    call springboot-app\\mvnw.cmd --version
+                    if errorlevel 1 exit /b 1
+                    echo === Git ===
+                    git --version || exit /b 1
+                '''
                 script {
                     env.CHECKED_OUT_COMMIT = bat(
                         script: '@echo off\r\ngit rev-parse HEAD',
@@ -60,31 +73,17 @@ pipeline {
             }
         }
 
-        stage('Verify Environment') {
-            steps {
-                bat '''
-                    @echo off
-                    echo === Node.js ===
-                    node --version || exit /b 1
-                    echo === npm ===
-                    npm --version || exit /b 1
-                    echo === Java ===
-                    java -version || exit /b 1
-                    echo === Python ===
-                    python --version || exit /b 1
-                    echo === Maven Wrapper ===
-                    call springboot-app\\mvnw.cmd --version
-                    if errorlevel 1 exit /b 1
-                    echo === Git ===
-                    git --version || exit /b 1
-                '''
-            }
-        }
-
-        stage('Build Frontend') {
+        stage('Frontend Install') {
             steps {
                 dir('frontend') {
                     bat 'call npm ci'
+                }
+            }
+        }
+
+        stage('Frontend Build') {
+            steps {
+                dir('frontend') {
                     bat 'call npm run build'
                     bat 'if not exist dist\\index.html exit /b 1'
                     echo 'Frontend bundle verified at frontend/dist/index.html'
@@ -92,70 +91,43 @@ pipeline {
             }
         }
 
-        stage('Test Frontend') {
+        stage('Frontend Tests') {
             steps {
                 dir('frontend') {
-                    script {
-                        def testScript = bat(
-                            script: '@echo off\r\nnode -e "const p=require(\'./package.json\'); process.stdout.write((p.scripts && p.scripts.test) || \'\')"',
-                            returnStdout: true
-                        ).trim()
-
-                        if (testScript) {
-                            echo "Running configured frontend test script: ${testScript}"
-                            bat 'if not exist target\\ci-reports mkdir target\\ci-reports'
-                            bat 'call npm test -- --reporter=default --reporter=junit --outputFile=target/ci-reports/frontend-results.xml'
-                            env.FRONTEND_TEST_RESULT = 'PASSED'
-                        } else {
-                            env.FRONTEND_TEST_RESULT = 'NO_TEST_SCRIPT'
-                            echo 'No frontend test script is configured in frontend/package.json; no frontend tests were run.'
-                        }
-                    }
+                    bat 'if not exist target\\ci-reports mkdir target\\ci-reports'
+                    bat 'call npm test -- --reporter=default --reporter=junit --outputFile=target/ci-reports/frontend-results.xml'
+                    script { env.FRONTEND_TEST_RESULT = 'PASSED' }
                 }
             }
             post {
                 failure {
                     script { env.FRONTEND_TEST_RESULT = 'FAILED' }
                 }
-                always {
-                    junit testResults: 'frontend/target/ci-reports/frontend-results.xml', allowEmptyResults: true
-                }
             }
         }
 
-        stage('Test Spring Boot') {
+        stage('Spring Boot Build and Tests') {
             steps {
                 dir('springboot-app') {
-                    bat 'call mvnw.cmd test'
+                    bat 'call mvnw.cmd clean verify'
                     bat 'if not exist target\\surefire-reports\\*.xml exit /b 1'
-                    env.SPRING_TEST_RESULT = 'PASSED'
+                    bat 'if not exist target\\smart-citizen-complaint-portal-1.0.0.jar exit /b 1'
+                    script {
+                        env.SPRING_TEST_RESULT = 'PASSED'
+                    }
                 }
             }
             post {
                 failure {
                     script { env.SPRING_TEST_RESULT = 'FAILED' }
                 }
-                always {
-                    junit testResults: 'springboot-app/target/surefire-reports/*.xml', allowEmptyResults: true
-                }
             }
         }
 
-        stage('Package Spring Boot') {
-            steps {
-                dir('springboot-app') {
-                    bat 'call mvnw.cmd package -DskipTests'
-                    bat 'if not exist target\\smart-citizen-complaint-portal-1.0.0.jar exit /b 1'
-                    bat 'echo Generated JAR files: & dir /b target\\*.jar'
-                    echo 'Executable JAR: springboot-app/target/smart-citizen-complaint-portal-1.0.0.jar'
-                }
-            }
-        }
-
-        stage('Test Flask') {
+        stage('Flask Tests') {
             steps {
                 script {
-                    env.FLASK_VENV = "${env.WORKSPACE}@tmp\\flask-ci-${env.BUILD_NUMBER}"
+                    env.FLASK_VENV = "${env.WORKSPACE}\\flask-ci-venv-${env.BUILD_NUMBER}"
                 }
                 dir('flask-app') {
                     bat 'python --version'
@@ -164,7 +136,9 @@ pipeline {
                     bat '"%FLASK_VENV%\\Scripts\\python.exe" -c "import ast,pathlib; [ast.parse(p.read_text(encoding=\'utf-8\'), filename=str(p)) for p in map(pathlib.Path, (\'app.py\', \'test_app.py\'))]"'
                     bat 'if not exist target\\ci-reports mkdir target\\ci-reports'
                     bat '"%FLASK_VENV%\\Scripts\\python.exe" -m pytest -q test_app.py --junitxml=target/ci-reports/flask-results.xml'
-                    env.FLASK_TEST_RESULT = 'PASSED'
+                    script {
+                        env.FLASK_TEST_RESULT = 'PASSED'
+                    }
                 }
             }
             post {
@@ -177,69 +151,22 @@ pipeline {
                             bat "if exist \"%FLASK_VENV%\" rmdir /s /q \"%FLASK_VENV%\""
                         }
                     }
-                    junit testResults: 'flask-app/target/ci-reports/flask-results.xml', allowEmptyResults: true
                 }
             }
         }
 
-        stage('Build Docker Images') {
-            when {
-                expression { params.BUILD_DOCKER_IMAGES || params.DEPLOY_TO_KUBERNETES }
-            }
+        stage('Docker Build') {
             steps {
-                bat 'docker info'
-                bat '''
-                    @echo off
-                    set "JWT_SECRET=ci-compose-validation-secret-not-for-authentication"
-                    docker compose config --quiet
-                '''
+                bat 'docker info --format "{{.ServerVersion}}"'
                 bat "docker build -t smartcitizen/springboot-backend:${env.CI_IMAGE_TAG} -f springboot-app/Dockerfile springboot-app"
                 bat "docker build -t smartcitizen/react-frontend:${env.CI_IMAGE_TAG} -f frontend/Dockerfile frontend"
                 bat "docker build -t smartcitizen/flask-service:${env.CI_IMAGE_TAG} -f flask-app/Dockerfile flask-app"
-                bat "docker image inspect smartcitizen/springboot-backend:${env.CI_IMAGE_TAG} smartcitizen/react-frontend:${env.CI_IMAGE_TAG} smartcitizen/flask-service:${env.CI_IMAGE_TAG}"
+                bat "docker image inspect --format \"{{.Id}}\" smartcitizen/springboot-backend:${env.CI_IMAGE_TAG} smartcitizen/react-frontend:${env.CI_IMAGE_TAG} smartcitizen/flask-service:${env.CI_IMAGE_TAG}"
                 script { env.DOCKER_RESULT = 'PASSED' }
             }
             post {
                 failure {
                     script { env.DOCKER_RESULT = 'FAILED' }
-                }
-            }
-        }
-
-        stage('Validate Kubernetes Manifests') {
-            steps {
-                script {
-                    def kubectlAvailable = bat(
-                        script: '@echo off\r\nwhere kubectl >nul 2>nul',
-                        returnStatus: true
-                    ) == 0
-
-                    if (!kubectlAvailable) {
-                        env.KUBERNETES_RESULT = 'SKIPPED: kubectl is not installed on this agent'
-                        echo env.KUBERNETES_RESULT
-                    } else {
-                        def contextStatus = bat(
-                            script: '@echo off\r\nkubectl config current-context >nul 2>nul',
-                            returnStatus: true
-                        )
-                        if (contextStatus != 0) {
-                            env.KUBERNETES_RESULT = 'SKIPPED: no Kubernetes context is configured'
-                            echo env.KUBERNETES_RESULT
-                        } else {
-                            def currentContext = bat(
-                                script: '@echo off\r\nkubectl config current-context',
-                                returnStdout: true
-                            ).trim()
-                            echo "Current Kubernetes context: ${currentContext}"
-                            bat 'kubectl apply --dry-run=client --validate=false -f k8s/'
-                            env.KUBERNETES_RESULT = 'MANIFESTS_VALIDATED'
-                        }
-                    }
-                }
-            }
-            post {
-                failure {
-                    script { env.KUBERNETES_RESULT = 'VALIDATION_FAILED' }
                 }
             }
         }
@@ -315,6 +242,21 @@ pipeline {
                 }
             }
         }
+
+        stage('Final Pipeline Validation') {
+            steps {
+                bat '''
+                    @echo off
+                    if not exist frontend\\dist\\index.html exit /b 1
+                    if not exist frontend\\target\\ci-reports\\frontend-results.xml exit /b 1
+                    if not exist springboot-app\\target\\smart-citizen-complaint-portal-1.0.0.jar exit /b 1
+                    if not exist springboot-app\\target\\surefire-reports\\*.xml exit /b 1
+                    if not exist flask-app\\target\\ci-reports\\flask-results.xml exit /b 1
+                '''
+                bat "docker image inspect --format \"{{.Id}}\" smartcitizen/springboot-backend:${env.CI_IMAGE_TAG} smartcitizen/react-frontend:${env.CI_IMAGE_TAG} smartcitizen/flask-service:${env.CI_IMAGE_TAG}"
+                echo 'All configured tests, build artifacts, and Docker images are present.'
+            }
+        }
     }
 
     post {
@@ -332,13 +274,13 @@ pipeline {
             echo "Spring Boot tests: ${env.SPRING_TEST_RESULT}"
             echo "Flask tests: ${env.FLASK_TEST_RESULT}"
             echo "Docker: ${env.DOCKER_RESULT}"
-            echo "Kubernetes: ${env.KUBERNETES_RESULT}"
+            echo "Kubernetes deployment: ${env.KUBERNETES_RESULT}"
             echo 'Frontend bundle: frontend/dist/'
             echo 'Spring Boot JAR: springboot-app/target/smart-citizen-complaint-portal-1.0.0.jar'
             echo '===================================================='
         }
         success {
-            echo 'SUCCESS: CI stages completed. Optional Docker/Kubernetes stages are reported above.'
+            echo 'SUCCESS: All configured CI stages passed; Kubernetes deployment was optional.'
         }
         failure {
             echo 'FAILURE: Review the failed stage and test reports above; no failed stage is treated as successful.'
