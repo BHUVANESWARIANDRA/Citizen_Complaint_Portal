@@ -40,6 +40,7 @@ pipeline {
         GIT_EXE = 'C:\\Program Files\\Git\\bin\\git.exe'
         PYTHON_EXE = 'C:\\Users\\BHUVANESWARI\\AppData\\Local\\Python\\bin\\python.exe'
         DOCKER_EXE = 'C:\\Users\\BHUVANESWARI\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe'
+        DOCKER_COMPOSE_EXE = 'C:\\Users\\BHUVANESWARI\\.docker\\cli-plugins\\docker-compose.exe'
         CI_TOOL_PATHS = 'C:\\Program Files\\Git\\bin;C:\\Users\\BHUVANESWARI\\AppData\\Local\\Python\\bin;C:\\Users\\BHUVANESWARI\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin'
         CI_IMAGE_TAG = "ci-${BUILD_NUMBER}"
     }
@@ -97,17 +98,22 @@ pipeline {
                         echo === Maven Wrapper ===
                         call springboot-app\\mvnw.cmd --version
                         if errorlevel 1 exit /b 1
-                        echo === Docker CLI and daemon ===
+                        echo === Docker CLI ===
                         echo Executable: "%DOCKER_EXE%"
-                        if not exist "%DOCKER_EXE%" (echo ERROR: Docker CLI is not accessible at "%DOCKER_EXE%".& exit /b 1)
+                        if not exist "%DOCKER_EXE%" (echo ERROR: Docker CLI not found at "%DOCKER_EXE%".& exit /b 1)
                         "%DOCKER_EXE%" --version
-                        if errorlevel 1 exit /b 1
-                        "%DOCKER_EXE%" compose version
-                        if errorlevel 1 (echo ERROR: Docker Compose is not available to the Jenkins service account.& exit /b 1)
-                        "%DOCKER_EXE%" compose config --quiet --no-interpolate
-                        if errorlevel 1 (echo ERROR: docker-compose.yml failed Compose configuration validation.& exit /b 1)
-                        "%DOCKER_EXE%" info -f {{.ServerVersion}}
-                        if errorlevel 1 (echo ERROR: Docker CLI is present, but the Jenkins service account cannot access the Docker daemon.& exit /b 1)
+                        if errorlevel 1 (echo ERROR: Docker CLI could not run.& exit /b 1)
+                        echo === Docker Compose executable ===
+                        echo Executable: "%DOCKER_COMPOSE_EXE%"
+                        if not exist "%DOCKER_COMPOSE_EXE%" (echo ERROR: Docker Compose executable not found at "%DOCKER_COMPOSE_EXE%".& exit /b 1)
+                        "%DOCKER_COMPOSE_EXE%" version
+                        if errorlevel 1 (echo ERROR: Standalone Docker Compose executable could not run.& exit /b 1)
+                        echo === Docker Compose configuration ===
+                        "%DOCKER_COMPOSE_EXE%" -f docker-compose.yml config --quiet --no-interpolate
+                        if errorlevel 1 (echo ERROR: docker-compose.yml failed standalone Compose configuration validation.& exit /b 1)
+                        echo === Docker daemon connectivity ===
+                        "%DOCKER_EXE%" info -f {{.ServerVersion}} 2>&1
+                        if errorlevel 1 (echo ERROR: Docker daemon is inaccessible to the Jenkins service identity. Check Docker Desktop availability and access to its named pipe; do not expose an unauthenticated TCP endpoint.& exit /b 1)
                     '''
                     script { env.ENVIRONMENT_RESULT = 'PASSED' }
                     script {
