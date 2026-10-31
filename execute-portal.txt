@@ -1,0 +1,5 @@
+To execute the portal:
+1. Open a terminal in project root.
+2. Run: docker compose up -d springboot-backend react-frontend
+3. Confirm backend health: curl http://localhost:8083/actuator/health
+4. Confirm frontend: curl http://localhost:3000/health

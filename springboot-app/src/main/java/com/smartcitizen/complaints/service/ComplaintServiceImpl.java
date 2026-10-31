@@ -2,12 +2,12 @@ package com.smartcitizen.complaints.service;
 
 import com.smartcitizen.complaints.dto.ComplaintResponse;
 import com.smartcitizen.complaints.dto.ComplaintStatsResponse;
+import com.smartcitizen.complaints.dto.ComplaintTrackingResponse;
 import com.smartcitizen.complaints.dto.CreateComplaintRequest;
 import com.smartcitizen.complaints.dto.TrackComplaintRequest;
 import com.smartcitizen.complaints.dto.UpdateStatusRequest;
 import com.smartcitizen.complaints.exception.ForbiddenException;
 import com.smartcitizen.complaints.exception.ResourceNotFoundException;
-import com.smartcitizen.complaints.exception.UnauthorizedException;
 import com.smartcitizen.complaints.exception.UnauthorizedException;
 import com.smartcitizen.complaints.model.Complaint;
 import com.smartcitizen.complaints.model.ComplaintCategory;
@@ -165,35 +165,22 @@ public class ComplaintServiceImpl implements ComplaintService {
 
     @Override
     @Transactional(readOnly = true)
-    public ComplaintResponse trackComplaint(TrackComplaintRequest request) {
+    public ComplaintTrackingResponse trackComplaint(TrackComplaintRequest request) {
         Complaint complaint = findByIdentifier(request.getComplaintId());
 
-        UserPrincipal principal = SecurityContext.getCurrentUser();
-        boolean isAuthorized = false;
+        String verification = request.getVerification() != null
+                ? request.getVerification().trim()
+                : "";
+        boolean matchesEmail = complaint.getCitizenEmail() != null
+                && complaint.getCitizenEmail().trim().equalsIgnoreCase(verification);
+        boolean matchesPhone = complaint.getCitizenPhone() != null
+                && complaint.getCitizenPhone().trim().equals(verification);
 
-        if (principal != null) {
-            if (principal.isOfficer()) {
-                isAuthorized = true;
-            } else if (complaint.getCitizen() != null && complaint.getCitizen().getId().equals(principal.getUserId())) {
-                isAuthorized = true;
-            } else if (principal.getEmail().equalsIgnoreCase(complaint.getCitizenEmail())) {
-                isAuthorized = true;
-            }
+        if (!matchesEmail && !matchesPhone) {
+            throw new ForbiddenException("Complaint ID and verification details (registered email or phone) do not match.");
         }
 
-        if (!isAuthorized) {
-            String verification = request.getVerification() != null ? request.getVerification().trim().toLowerCase() : "";
-            boolean matchesEmail = complaint.getCitizenEmail() != null &&
-                    complaint.getCitizenEmail().trim().toLowerCase().equals(verification);
-            boolean matchesPhone = complaint.getCitizenPhone() != null &&
-                    complaint.getCitizenPhone().trim().equals(verification);
-
-            if (!matchesEmail && !matchesPhone) {
-                throw new ForbiddenException("Complaint ID and verification details (registered email or phone) do not match.");
-            }
-        }
-
-        return ComplaintResponse.fromEntity(complaint);
+        return ComplaintTrackingResponse.fromEntity(complaint);
     }
 
     @Override

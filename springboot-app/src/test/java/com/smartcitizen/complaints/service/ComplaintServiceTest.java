@@ -2,6 +2,7 @@ package com.smartcitizen.complaints.service;
 
 import com.smartcitizen.complaints.dto.ComplaintResponse;
 import com.smartcitizen.complaints.dto.ComplaintStatsResponse;
+import com.smartcitizen.complaints.dto.ComplaintTrackingResponse;
 import com.smartcitizen.complaints.dto.CreateComplaintRequest;
 import com.smartcitizen.complaints.dto.TrackComplaintRequest;
 import com.smartcitizen.complaints.dto.UpdateStatusRequest;
@@ -201,15 +202,34 @@ class ComplaintServiceTest {
                 .thenReturn(Optional.of(sampleComplaint));
 
         TrackComplaintRequest request = new TrackComplaintRequest("CMP-2026-99999", "sunil@example.com");
-        ComplaintResponse response = complaintService.trackComplaint(request);
+        ComplaintTrackingResponse response = complaintService.trackComplaint(request);
 
         assertThat(response).isNotNull();
-        assertThat(response.getComplaintId()).isEqualTo("CMP-2026-99999");
+        assertThat(response.complaintId()).isEqualTo("CMP-2026-99999");
+        assertThat(response.category()).isEqualTo(ComplaintCategory.STREETLIGHTS);
+        assertThat(response.description()).isEqualTo("Light keeps blinking every few seconds");
+        assertThat(response.publicUpdates()).isEmpty();
     }
 
     @Test
     @DisplayName("Should reject tracking complaint with mismatched verification")
     void testTrackComplaint_MismatchedVerification() {
+        when(complaintRepository.findByComplaintId("CMP-2026-99999"))
+                .thenReturn(Optional.of(sampleComplaint));
+
+        TrackComplaintRequest request = new TrackComplaintRequest("CMP-2026-99999", "wrong@example.com");
+
+        assertThatThrownBy(() -> complaintService.trackComplaint(request))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessageContaining("verification details");
+    }
+
+    @Test
+    @DisplayName("Should require contact verification even for an authenticated officer")
+    void testTrackComplaint_OfficerStillRequiresContactVerification() {
+        SecurityContext.setCurrentUser(new UserPrincipal(
+                1L, "officer@example.com", "Officer", Role.ROLE_OFFICER
+        ));
         when(complaintRepository.findByComplaintId("CMP-2026-99999"))
                 .thenReturn(Optional.of(sampleComplaint));
 

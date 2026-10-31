@@ -3,7 +3,10 @@ package com.smartcitizen.complaints.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartcitizen.complaints.dto.ComplaintResponse;
 import com.smartcitizen.complaints.dto.ComplaintStatsResponse;
+import com.smartcitizen.complaints.dto.ComplaintTrackingResponse;
 import com.smartcitizen.complaints.dto.CreateComplaintRequest;
+import com.smartcitizen.complaints.dto.PublicComplaintUpdate;
+import com.smartcitizen.complaints.dto.TrackComplaintRequest;
 import com.smartcitizen.complaints.dto.UpdateStatusRequest;
 import com.smartcitizen.complaints.exception.ResourceNotFoundException;
 import com.smartcitizen.complaints.model.ComplaintCategory;
@@ -172,5 +175,55 @@ class ComplaintControllerTest {
                 .andExpect(jsonPath("$.submittedCount", is(10)))
                 .andExpect(jsonPath("$.inProgressCount", is(6)))
                 .andExpect(jsonPath("$.resolvedCount", is(4)));
+    }
+
+    @Test
+    @DisplayName("POST /api/complaints/track returns only public complaint status fields")
+    void testTrackComplaint_DoesNotExposePrivateOrInternalFields() throws Exception {
+        TrackComplaintRequest request = new TrackComplaintRequest(
+                "CMP-2026-12345", "citizen@example.com"
+        );
+        ComplaintTrackingResponse response = new ComplaintTrackingResponse(
+                "CMP-2026-12345",
+                ComplaintCategory.ROADS_AND_POTHOLES,
+                "Roads and potholes",
+                "A damaged road surface needs repair.",
+                ComplaintStatus.IN_PROGRESS,
+                LocalDateTime.now(),
+                LocalDateTime.now(),
+                List.of(new PublicComplaintUpdate(
+                        ComplaintStatus.IN_PROGRESS, LocalDateTime.now()
+                ))
+        );
+        when(complaintService.trackComplaint(any(TrackComplaintRequest.class))).thenReturn(response);
+
+        mockMvc.perform(post("/api/complaints/track")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.complaintId", is("CMP-2026-12345")))
+                .andExpect(jsonPath("$.category", is("ROADS_AND_POTHOLES")))
+                .andExpect(jsonPath("$.status", is("IN_PROGRESS")))
+                .andExpect(jsonPath("$.publicUpdates[0].status", is("IN_PROGRESS")))
+                .andExpect(jsonPath("$.citizenEmail").doesNotExist())
+                .andExpect(jsonPath("$.citizenPhone").doesNotExist())
+                .andExpect(jsonPath("$.citizenUserId").doesNotExist())
+                .andExpect(jsonPath("$.citizenName").doesNotExist())
+                .andExpect(jsonPath("$.title").doesNotExist())
+                .andExpect(jsonPath("$.location").doesNotExist())
+                .andExpect(jsonPath("$.photo").doesNotExist())
+                .andExpect(jsonPath("$.adminRemark").doesNotExist())
+                .andExpect(jsonPath("$.auditLogs").doesNotExist())
+                .andExpect(jsonPath("$.publicUpdates[0].updatedBy").doesNotExist())
+                .andExpect(jsonPath("$.publicUpdates[0].remark").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("POST /api/complaints/track requires both complaint reference and contact verification")
+    void testTrackComplaint_RequiresReferenceAndVerification() throws Exception {
+        mockMvc.perform(post("/api/complaints/track")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"complaintId\":\"CMP-2026-12345\"}"))
+                .andExpect(status().isBadRequest());
     }
 }

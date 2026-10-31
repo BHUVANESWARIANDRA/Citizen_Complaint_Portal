@@ -46,7 +46,7 @@ USER appuser
 EXPOSE 8081
 
 # Configure JVM memory limits and runtime properties
-ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=65 -XX:+UseSerialGC"
 ENV PORT=8081
 ENV SPRING_DATASOURCE_URL="jdbc:h2:file:/app/data/complaintsdb;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE"
 

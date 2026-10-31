@@ -2,6 +2,7 @@ package com.smartcitizen.complaints.service;
 
 import com.smartcitizen.complaints.dto.ComplaintResponse;
 import com.smartcitizen.complaints.dto.ComplaintStatsResponse;
+import com.smartcitizen.complaints.dto.ComplaintTrackingResponse;
 import com.smartcitizen.complaints.dto.CreateComplaintRequest;
 import com.smartcitizen.complaints.dto.TrackComplaintRequest;
 import com.smartcitizen.complaints.dto.UpdateStatusRequest;
@@ -20,7 +21,7 @@ public interface ComplaintService {
 
     ComplaintResponse getComplaintByIdOrIdentifier(String identifier);
 
-    ComplaintResponse trackComplaint(TrackComplaintRequest request);
+    ComplaintTrackingResponse trackComplaint(TrackComplaintRequest request);
 
     ComplaintResponse updateComplaintStatus(String identifier, UpdateStatusRequest request);
 

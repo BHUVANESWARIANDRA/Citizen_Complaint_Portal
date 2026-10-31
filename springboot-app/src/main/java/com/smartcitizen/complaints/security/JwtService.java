@@ -98,7 +98,7 @@ public class JwtService {
 
             long exp = payloadNode.path("exp").asLong(0);
             long now = Instant.now().getEpochSecond();
-            if (exp < now) {
+            if (exp <= now) {
                 log.warn("JWT token expired at {} (now {})", exp, now);
                 return Optional.empty();
             }

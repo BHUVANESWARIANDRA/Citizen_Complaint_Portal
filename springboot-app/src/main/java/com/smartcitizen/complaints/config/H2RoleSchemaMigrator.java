@@ -3,6 +3,7 @@ package com.smartcitizen.complaints.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 
 @Component
+@Profile("!production")
 public class H2RoleSchemaMigrator {
 
     private static final Logger log = LoggerFactory.getLogger(H2RoleSchemaMigrator.class);

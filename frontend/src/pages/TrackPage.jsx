@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, ShieldAlert, CheckCircle, Clock, Eye, Loader2, XCircle, FileText, Calendar, MapPin, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Search, FileText, Calendar, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useRouter, Link } from '../router/Router';
 import { ComplaintService } from '../services/api';
 import { StatusBadge } from '../components/StatusBadge';
@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 
 export const TrackPage = () => {
   const { navigate } = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
 
   const [complaintId, setComplaintId] = useState('');
   const [verification, setVerification] = useState(user?.email || user?.phone || '');
@@ -26,7 +26,7 @@ export const TrackPage = () => {
       return;
     }
 
-    if (!isAuthenticated && !verification.trim()) {
+    if (!verification.trim()) {
       setError('Please provide your registered email address or mobile number for privacy verification.');
       return;
     }
@@ -71,7 +71,7 @@ export const TrackPage = () => {
           <h1>Track Your Civic Complaint</h1>
           <p>
             Enter your unique complaint reference number and registered contact details
-            to view real-time status updates and municipal inspection logs.
+            to view the complaint status and public status updates.
           </p>
         </div>
 
@@ -139,14 +139,8 @@ export const TrackPage = () => {
               <StatusBadge status={complaint.status} />
             </div>
 
-            <h2 className="complaint-title-large">{complaint.title}</h2>
-
             <div className="complaint-meta-row">
               <CategoryBadge category={complaint.category} displayName={complaint.categoryDisplayName} />
-              <span className="meta-item">
-                <MapPin size={14} />
-                <span>{complaint.location}</span>
-              </span>
               <span className="meta-item">
                 <Calendar size={14} />
                 <span>Reported on {formatDate(complaint.createdAt)}</span>
@@ -158,40 +152,27 @@ export const TrackPage = () => {
               <p className="complaint-desc-text">{complaint.description}</p>
             </div>
 
-            {complaint.adminRemark && (
-              <div className="complaint-section remarks-box">
-                <h4>Official Municipal Resolution Remarks</h4>
-                <p>{complaint.adminRemark}</p>
-                <div className="remarks-footer">Last updated: {formatDate(complaint.updatedAt)}</div>
-              </div>
-            )}
-
-            {/* Status History & Audit Trail */}
             <div className="complaint-section">
-              <h4>Case Progress & Audit Timeline</h4>
-              {complaint.auditLogs && complaint.auditLogs.length > 0 ? (
+              <h4>Public Status Updates</h4>
+              {complaint.publicUpdates && complaint.publicUpdates.length > 0 ? (
                 <div className="timeline">
-                  {complaint.auditLogs.map((log, index) => (
-                    <div key={log.id || index} className="timeline-item">
+                  {complaint.publicUpdates.map((update, index) => (
+                    <div key={`${update.status}-${update.updatedAt}-${index}`} className="timeline-item">
                       <div className="timeline-marker">
                         <div className="timeline-dot" />
-                        {index < complaint.auditLogs.length - 1 && <div className="timeline-line" />}
+                        {index < complaint.publicUpdates.length - 1 && <div className="timeline-line" />}
                       </div>
                       <div className="timeline-content">
                         <div className="timeline-header">
-                          <StatusBadge status={log.toStatus} />
-                          <span className="timeline-date">{formatDate(log.createdAt)}</span>
+                          <StatusBadge status={update.status} />
+                          <span className="timeline-date">{formatDate(update.updatedAt)}</span>
                         </div>
-                        {log.remark && <p className="timeline-remark">{log.remark}</p>}
-                        {log.updatedBy && (
-                          <div className="timeline-actor">Logged by: {log.updatedBy}</div>
-                        )}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted">Status: {complaint.status}. No additional status history recorded.</p>
+                <p className="text-muted">Current status: {complaint.status}. No public status updates have been recorded.</p>
               )}
             </div>
           </div>

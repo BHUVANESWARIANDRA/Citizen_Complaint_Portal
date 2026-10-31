@@ -1,0 +1,52 @@
+warning: in the working copy of '.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docker-compose.yml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/LAB_RECORD.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/Dockerfile', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/nginx.conf', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/App.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/Navbar.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/StatusBadge.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/index.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/services/api.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/test/StatusBadge.test.jsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'k8s/01-configmap.yaml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'k8s/03-backend-deployment.yaml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/pom.xml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/main/java/com/smartcitizen/complaints/config/DataInitializer.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/main/java/com/smartcitizen/complaints/controller/ComplaintController.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/main/java/com/smartcitizen/complaints/dto/ComplaintResponse.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/main/java/com/smartcitizen/complaints/dto/ComplaintStatsResponse.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/main/java/com/smartcitizen/complaints/dto/CreateComplaintRequest.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/main/java/com/smartcitizen/complaints/exception/GlobalExceptionHandler.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/main/java/com/smartcitizen/complaints/model/Complaint.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/main/java/com/smartcitizen/complaints/model/ComplaintStatus.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/main/java/com/smartcitizen/complaints/repository/ComplaintRepository.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/main/java/com/smartcitizen/complaints/service/ComplaintService.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/main/java/com/smartcitizen/complaints/service/ComplaintServiceImpl.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/main/resources/application.properties', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/test/java/com/smartcitizen/complaints/controller/ComplaintControllerTest.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/test/java/com/smartcitizen/complaints/service/ComplaintServiceTest.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'springboot-app/src/test/resources/application.properties', LF will be replaced by CRLF the next time Git touches it
+docs/LAB_RECORD.md:335: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 2: Maven Test Suite Success (37 Tests Passed)**[m[41m  [m
+docs/LAB_RECORD.md:343: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 4: React Frontend Vitest Test Results (8 Tests Passed)**[m[41m  [m
+docs/LAB_RECORD.md:351: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 6: Modern Civic Landing Page (`/`)**[m[41m  [m
+docs/LAB_RECORD.md:355: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 7: Citizen Registration & Login Pages**[m[41m  [m
+docs/LAB_RECORD.md:356: trailing whitespace.
+[32m+[m[32m  *URLs:* `http://localhost:5173/citizen/register` and `http://localhost:5173/citizen/login`[m[41m  [m
+docs/LAB_RECORD.md:359: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 8: Citizen Dashboard (`/citizen/dashboard`)**[m[41m  [m
+docs/LAB_RECORD.md:362: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 9: Privacy-Protected Grievance Tracker (`/track`)**[m[41m  [m
+docs/LAB_RECORD.md:365: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 10: Administrator Portal Dashboard (`/admin/dashboard`)**[m[41m  [m
+docs/LAB_RECORD.md:368: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 11: Jenkins CI Pipeline Execution**[m[41m  [m
+docs/LAB_RECORD.md:372: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 12: Docker Containers Running (`docker compose ps`)**[m[41m  [m
+docs/LAB_RECORD.md:376: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 13: Kubernetes Pods and Services (`kubectl get all`)**[m[41m  [m
+springboot-app/src/test/resources/application.properties:15: new blank line at EOF.

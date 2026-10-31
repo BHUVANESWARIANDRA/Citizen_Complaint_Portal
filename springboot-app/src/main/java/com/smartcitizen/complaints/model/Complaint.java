@@ -49,8 +49,7 @@ public class Complaint {
     @Column(length = 2000)
     private String adminRemark;
 
-    @Lob
-    @Column(name = "photo")
+    @Column(name = "photo", columnDefinition = "TEXT")
     private String photo;
 
     @ManyToOne(fetch = FetchType.LAZY)

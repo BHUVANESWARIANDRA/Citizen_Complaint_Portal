@@ -2,6 +2,7 @@ package com.smartcitizen.complaints.controller;
 
 import com.smartcitizen.complaints.dto.ComplaintResponse;
 import com.smartcitizen.complaints.dto.ComplaintStatsResponse;
+import com.smartcitizen.complaints.dto.ComplaintTrackingResponse;
 import com.smartcitizen.complaints.dto.CreateComplaintRequest;
 import com.smartcitizen.complaints.dto.TrackComplaintRequest;
 import com.smartcitizen.complaints.dto.UpdateStatusRequest;
@@ -60,8 +61,8 @@ public class ComplaintController {
      * Securely track a complaint by reference ID and verification (email or phone).
      */
     @PostMapping("/track")
-    public ResponseEntity<ComplaintResponse> trackComplaint(@Valid @RequestBody TrackComplaintRequest request) {
-        ComplaintResponse response = complaintService.trackComplaint(request);
+    public ResponseEntity<ComplaintTrackingResponse> trackComplaint(@Valid @RequestBody TrackComplaintRequest request) {
+        ComplaintTrackingResponse response = complaintService.trackComplaint(request);
         return ResponseEntity.ok(response);
     }
 

@@ -3,9 +3,10 @@ import axios from 'axios';
 // Vite's dev server and the production Nginx proxy use relative API paths.
 // Render provides the backend host without a scheme, so normalize it for browsers.
 const configuredApiUrl = import.meta.env.VITE_API_URL || '';
-const API_BASE_URL = configuredApiUrl && !/^https?:\/\//i.test(configuredApiUrl)
-  ? `https://${configuredApiUrl}`
-  : configuredApiUrl;
+export const resolveApiBaseUrl = (apiUrl) => apiUrl && !/^https?:\/\//i.test(apiUrl)
+  ? `https://${apiUrl}`
+  : apiUrl;
+const API_BASE_URL = resolveApiBaseUrl(configuredApiUrl);
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

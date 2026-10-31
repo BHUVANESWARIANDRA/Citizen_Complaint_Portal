@@ -1,0 +1,9 @@
+Smart Citizen Complaint Management Portal startup issue fixed without deleting existing database or volumes.
+
+- Legacy H2 role column widened and legacy role constraint removed.
+- Startup initializer seeds demo officer account safely.
+- Backend + frontend tests passed.
+- Docker compose config and image build passed.
+
+Run:
+docker compose up -d springboot-backend react-frontend

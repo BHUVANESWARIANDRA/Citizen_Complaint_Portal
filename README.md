@@ -133,7 +133,7 @@ available only on the computer running Docker Compose.
 ## 📋 Course Outcomes (CO) Coverage
 
 - **CO1 (Git & GitHub):** Repository initialization, commit workflow, feature branching (`feature/complaint-form`), merging, and remote GitHub synchronization.
-- **CO2 (Jenkins CI/CD):** 3 Chained Freestyle jobs (`Checkout` -> `Build-Test` -> `Package`), Declarative Pipeline with multi-stage automated build & test, Scripted Pipeline with error recovery.
+- **CO2 (Jenkins CI/CD):** Existing chained Freestyle jobs plus a single-workspace Declarative Pipeline for frontend build/tests, Spring Boot tests/package, Flask tests, and artifact archiving; Docker builds and local Kubernetes deployment are opt-in. See [docs/JENKINS_SETUP_GUIDE.md](docs/JENKINS_SETUP_GUIDE.md) for Jenkins setup.
 - **CO3 (Java, Maven, Spring Boot):** Java 21 LTS, Spring Boot 3, clean layered architecture (Controller, Service, Repository, DTO), comprehensive JUnit 5 and MockMvc tests, Maven Wrapper packaging.
 - **CO4 (Docker & Flask):** Optimized multi-stage Docker builds, health checks, environment configuration, Python Flask microservice syllabus demonstration, Docker Compose service orchestration.
 - **CO5 (Kubernetes):** Declarative YAML manifests, persistent volumes, pod scheduling, zero-downtime rolling updates, and rollback procedures.

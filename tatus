@@ -1,0 +1,23 @@
+docs/LAB_RECORD.md:335: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 2: Maven Test Suite Success (37 Tests Passed)**[m[41m  [m
+docs/LAB_RECORD.md:343: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 4: React Frontend Vitest Test Results (8 Tests Passed)**[m[41m  [m
+docs/LAB_RECORD.md:351: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 6: Modern Civic Landing Page (`/`)**[m[41m  [m
+docs/LAB_RECORD.md:355: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 7: Citizen Registration & Login Pages**[m[41m  [m
+docs/LAB_RECORD.md:356: trailing whitespace.
+[32m+[m[32m  *URLs:* `http://localhost:5173/citizen/register` and `http://localhost:5173/citizen/login`[m[41m  [m
+docs/LAB_RECORD.md:359: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 8: Citizen Dashboard (`/citizen/dashboard`)**[m[41m  [m
+docs/LAB_RECORD.md:362: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 9: Privacy-Protected Grievance Tracker (`/track`)**[m[41m  [m
+docs/LAB_RECORD.md:365: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 10: Administrator Portal Dashboard (`/admin/dashboard`)**[m[41m  [m
+docs/LAB_RECORD.md:368: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 11: Jenkins CI Pipeline Execution**[m[41m  [m
+docs/LAB_RECORD.md:372: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 12: Docker Containers Running (`docker compose ps`)**[m[41m  [m
+docs/LAB_RECORD.md:376: trailing whitespace.
+[32m+[m[32m- [ ] **Screenshot 13: Kubernetes Pods and Services (`kubectl get all`)**[m[41m  [m
+springboot-app/src/test/resources/application.properties:15: new blank line at EOF.
